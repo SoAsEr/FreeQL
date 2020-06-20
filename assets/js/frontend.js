@@ -336,7 +336,7 @@ function createTableau(){
         if(indexj==0){
           toAppend=$("<th scope='row'>"+chemTextReplace(itemj)+"</th>");
         } else {
-          toAppend=$("<td>"+chemTextReplace(itemj)+"</td>");
+          toAppend=$("<td>"+itemj+"</td>");
         }
         if(indexj==1 && indexi==1){
           toAppend.addClass("left");
