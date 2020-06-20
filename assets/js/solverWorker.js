@@ -29,7 +29,7 @@ onmessage = function(e) {
   console.log("recieved");
   pythonReady.then(function(){
     console.log("started");
-    postMessage([2, pyodide.runPython("solutionFromWholeTableau("+e.data+")")]);
+    postMessage([2, pyodide.runPython("solutionFromWholeTableau("+e.data+")"), e.data]);
     console.log("finished");
   });
 }

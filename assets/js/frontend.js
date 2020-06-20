@@ -57,11 +57,11 @@ class Stack {
   }
 }
 
-function prettyExp(num){
-  return Number(num).toExponential(4).replace(/(\.[0-9]*[1-9])0*?$|\.0*?$/, "$1");
+function prettyExp(num, digits=4){
+  return Number(num).toExponential(digits).replace(/(\.[0-9]*[1-9])0*?$|\.0*?$/, "$1");
 }
-function prettyExpWithSigs(num){
-  return Number(num).toExponential(4);
+function prettyExpWithSigs(num, digits=4){
+  return Number(num).toExponential(digits);
 }
 
 function chemTextReplace(str){
@@ -255,8 +255,29 @@ function getDataURIFromResult(result){
   return uri;
 }
 
+var calculateMap=new Map();
+
 var solverWorker=null;
 var pythonBuffer="";
+
+function handleResultEvent(e){
+  $("#result-modal").attr("data-progress", "2");
+  $("#result-loading").hide();
+  if(e.data[1][1]){
+    console.log(e.data[1][0])
+    $("#result-modal .download-button").each(function(){
+      $(this).prop("disabled", false);
+    });
+    $("#result-modal-scroller").show();
+    $("#download-results").attr("href", getDataURIFromResult(e.data[1][0]));
+    for(const species in e.data[1][0]){
+      $("#result-modal-tbody").append('<tr><th scope="row">'+chemTextReplace(species)+'</th><td>'+prettyExpWithSigs(e.data[1][0][species])+'</td><td>'+Math.log10(e.data[1][0][species]).toFixed(2)+'</td></tr>');
+    }
+  } else {
+    $("#result-failed").show();
+  }
+}
+
 function startSolverWorker(){
   solverWorker=new Worker("assets/js/solverWorker.js");
   $("#result-modal").attr("data-progress", "0");
@@ -271,26 +292,12 @@ function startSolverWorker(){
       $("#result-modal").attr("data-progress", "1");
       $("#result-loading p").text("Calculating...");
     } else if(e.data[0]==2){
-      $("#result-modal").attr("data-progress", "2");
-      $("#result-loading").hide();
-      if(e.data[1][1]){
-        console.log(e.data[1][0])
-        $("#result-modal .download-button").each(function(){
-          $(this).prop("disabled", false);
-        });
-        $("#result-modal-scroller").show();
-        $("#download-results").attr("href", getDataURIFromResult(e.data[1][0]));
-        for(const species in e.data[1][0]){
-          $("#result-modal-tbody").append('<tr><th scope="row">'+chemTextReplace(species)+'</th><td>'+prettyExpWithSigs(e.data[1][0][species])+'</td></tr>');
-        }
-      } else {
-        $("#result-failed").show();
-      }
+      handleResultEvent(e);
+      calculateMap.set(e.data[2], e);
     }
   }
 }
 startSolverWorker();
-
 
 async function calculate(){
   $("#result-modal .download-button").each(function(){
@@ -322,16 +329,21 @@ async function calculate(){
     args+=",alk="+$("#hplus-input").val()
     args+=", alkEquation="+customAlkalinityEqn();
   }
+  $("#result-modal").modal({
+    keyboard: false,
+    backdrop: "static",
+  });
+  var possibleEarlyResult=calculateMap.get(args);
+  if(possibleEarlyResult!=undefined){
+    console.log("shortcut");
+    handleResultEvent(possibleEarlyResult);
+    return;
+  }
   if($("#result-modal").attr("data-progress")==0){
     pythonBuffer=args;
   } else {
     solverWorker.postMessage(args);
   }
-
-  $("#result-modal").modal({
-    keyboard: false,
-    backdrop: "static",
-  });
 }
 
 function waitForVisible(element, callback) {
@@ -576,7 +588,6 @@ function onReady(){
           $(this).remove();
           currentComponents.remove(toAdd);
         }
-        console.log(currentComponents);
       });
       adjustWidthToTargets();
     });
