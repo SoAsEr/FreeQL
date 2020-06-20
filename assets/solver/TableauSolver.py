@@ -165,7 +165,6 @@ def componentCSVStringToDatabase(componentCSVString):
             componentDict[int(row[0])]=Component(row)
 
 
-result={}
 def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, alkEqn, alk):
     #print(tableau)
     #print(horizontalLables)
@@ -270,6 +269,7 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, alkEqn,
     systemSolution=sys.evalResultToDict(xn)
     #print(xn)
     #print(systemSolution)
+    result={}
     for i in range(len(verticalLables)-1):
         if(verticalLables[i][0]=="c" or verticalLables[i][0]=="f"):
             result[componentDict[int(verticalLables[i][1:])].name]=horizontalEqns[i].eval(systemSolution)[0]

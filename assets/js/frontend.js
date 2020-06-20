@@ -270,6 +270,7 @@ function createTableau(){
     $("#result-loading").show();
     $("#result-modal-scroller").hide();
     var tableau=createTableau();
+    console.log(tableau);
     var args="[";
     tableau.forEach((itemi) => {
       args+="[";
@@ -534,6 +535,7 @@ function createTableau(){
             $(this).remove();
             currentComponents.remove(toAdd);
           }
+          console.log(currentComponents);
         });
         adjustWidthToTargets();
       });
