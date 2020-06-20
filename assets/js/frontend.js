@@ -7,6 +7,7 @@ let pasteUndo=[];
 var componentsMap=new Map();
 var speciesMap=new Map();
 
+
 //https://stackoverflow.com/questions/3954438/how-to-remove-item-from-array-by-value
 Array.prototype.remove = function() {
   var what, a = arguments, L = a.length, ax;
@@ -66,6 +67,8 @@ function prettyExpWithSigs(num){
 function chemTextReplace(str){
   return str.replace(/([A-z)])([0-9])/g, "$1<sub>$2</sub>").replace(/([+-])(?:1|([2-9]))?($|[/<\s])/g, "<sup>$2$1</sup>$3");
 }
+
+
 
 function addComponents(){
   componentsMap.forEach(function(component, id){
@@ -243,6 +246,15 @@ function customAlkalinityEqn(){
   alkEqn+="]";
   return alkEqn;
 }
+
+function getDataURIFromResult(result){
+  var uri="data:application/octet-stream,Species%2CConcentration%0A";
+  for(const arr in result){
+    uri+=arr+"%2C"+prettyExpWithSigs(result[arr])+"%0A";
+  }
+  return uri;
+}
+
 var solverWorker=null;
 var pythonBuffer="";
 function startSolverWorker(){
@@ -266,9 +278,10 @@ function startSolverWorker(){
         $("#result-modal .download-button").each(function(){
           $(this).prop("disabled", false);
         });
+        $("#result-modal-scroller").show();
+        $("#download-results").attr("href", getDataURIFromResult(e.data[1][0]));
         for(const species in e.data[1][0]){
           $("#result-modal-tbody").append('<tr><th scope="row">'+chemTextReplace(species)+'</th><td>'+prettyExpWithSigs(e.data[1][0][species])+'</td></tr>');
-          $("#result-modal-scroller").show();
         }
       } else {
         $("#result-failed").show();
