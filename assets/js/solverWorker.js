@@ -21,10 +21,15 @@ async function prepareTableauObjects(){
 
 var pythonReady=prepareTableauObjects();
 
+pythonReady.then(function(e){
+  postMessage([1, null]);
+})
 
 onmessage = function(e) {
+  console.log("recieved");
   pythonReady.then(function(){
-    postMessage([1, null]);
+    console.log("started");
     postMessage([2, pyodide.runPython("solutionFromWholeTableau("+e.data+")")]);
+    console.log("finished");
   });
 }

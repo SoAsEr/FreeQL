@@ -243,7 +243,7 @@
       </div>
       <div class="row mt-4 block-button-row">
         <div class="col my-no-gutters">
-          <button type="button" class="btn btn-primary btn-lg btn-block" onclick="calculate()">Calculate</button>
+          <button id="calculate-button" type="button" class="btn btn-primary btn-lg btn-block" onclick="calculate()" data-toggle="tooltip" title="One of the fields is empty or zero!">Calculate</button>
         </div>
         <div class="col my-no-gutters d-md-none">
           <button id="species-modal-opener" type="button" class="btn btn-secondary btn-lg btn-block" data-toggle="modal" data-target="#species-modal">View Species</button>
@@ -317,7 +317,7 @@
         </div>
       </div>
     </div>
-    <div id="result-modal" class="modal" tabindex="-1" role="dialog">
+    <div id="result-modal" class="modal" tabindex="-1" role="dialog" data-progress="0">
       <div class="modal-dialog" role="document">
         <div class="modal-content limited-modal">
           <div class="modal-header">
@@ -346,18 +346,28 @@
                 <p>Loading Python...</p>
               </div>
             </div>
+            <div id="result-failed">
+              <div class="d-flex flex-column align-items-center">
+                <h1 style='color:red'>&times;</h1>
+                <p>Failed to Converge. Please file a report on <a href="https://github.com/SoAsEr/FreeQL/issues/new">github</a></p>
+              </div>
+            </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary"><svg class="bi bi-download mb-1" height="1.1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path fill-rule="evenodd" d="M.5 8a.5.5 0 0 1 .5.5V12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5a.5.5 0 0 1 1 0V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8.5A.5.5 0 0 1 .5 8z"/>
-              <path fill-rule="evenodd" d="M5 7.5a.5.5 0 0 1 .707 0L8 9.793 10.293 7.5a.5.5 0 1 1 .707.707l-2.646 2.647a.5.5 0 0 1-.708 0L5 8.207A.5.5 0 0 1 5 7.5z"/>
-              <path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0v-8A.5.5 0 0 1 8 1z"/>
-            </svg> XLSX</button>
-            <button type="button" class="btn btn-primary mr-auto"><svg class="bi bi-download mb-1" height="1.1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path fill-rule="evenodd" d="M.5 8a.5.5 0 0 1 .5.5V12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5a.5.5 0 0 1 1 0V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8.5A.5.5 0 0 1 .5 8z"/>
-              <path fill-rule="evenodd" d="M5 7.5a.5.5 0 0 1 .707 0L8 9.793 10.293 7.5a.5.5 0 1 1 .707.707l-2.646 2.647a.5.5 0 0 1-.708 0L5 8.207A.5.5 0 0 1 5 7.5z"/>
-              <path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0v-8A.5.5 0 0 1 8 1z"/>
-            </svg> CSV</button>
+            <button type="button" class="btn btn-primary download-button">
+              <svg class="bi bi-download mb-1" height="1.1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M.5 8a.5.5 0 0 1 .5.5V12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5a.5.5 0 0 1 1 0V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8.5A.5.5 0 0 1 .5 8z"/>
+                <path fill-rule="evenodd" d="M5 7.5a.5.5 0 0 1 .707 0L8 9.793 10.293 7.5a.5.5 0 1 1 .707.707l-2.646 2.647a.5.5 0 0 1-.708 0L5 8.207A.5.5 0 0 1 5 7.5z"/>
+                <path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0v-8A.5.5 0 0 1 8 1z"/>
+              </svg> XLSX
+            </button>
+            <button type="button" class="btn btn-primary mr-auto  download-button">
+              <svg class="bi bi-download mb-1" height="1.1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M.5 8a.5.5 0 0 1 .5.5V12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5a.5.5 0 0 1 1 0V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8.5A.5.5 0 0 1 .5 8z"/>
+                <path fill-rule="evenodd" d="M5 7.5a.5.5 0 0 1 .707 0L8 9.793 10.293 7.5a.5.5 0 1 1 .707.707l-2.646 2.647a.5.5 0 0 1-.708 0L5 8.207A.5.5 0 0 1 5 7.5z"/>
+                <path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0v-8A.5.5 0 0 1 8 1z"/>
+              </svg> CSV
+            </button>
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
           </div>
         </div>
