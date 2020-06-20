@@ -57,14 +57,14 @@ class Stack {
 }
 
 function prettyExp(num){
-  return Number(num).toExponential(4).replace(/(\.[0-9]*[1-9])0*|(\.0*)/, "$1")
+  return Number(num).toExponential(4).replace(/(\.[0-9]*[1-9])0*?$|\.0*?$/, "$1");
 }
 function prettyExpWithSigs(num){
   return Number(num).toExponential(4);
 }
 
 function chemTextReplace(str){
-  return str.replace(/([A-z)])([0-9])/g, "$1<sub>$2</sub>").replace(/([+-])(?:1|([2-9]))?($|[<\s])/, "<sup>$2$1</sup>$3");
+  return str.replace(/([A-z)])([0-9])/g, "$1<sub>$2</sub>").replace(/([+-])(?:1|([2-9]))?($|[/<\s])/g, "<sup>$2$1</sup>$3");
 }
 
 function addComponents(){
@@ -72,7 +72,7 @@ function addComponents(){
     if(id==2){
       return;
     }
-    $("#selectpicker-component").append("<option value='"+id+"'>"+component[0]+"</option>");
+    $("#selectpicker-component").append("<option data-tokens='' value='"+id+"'>"+component[0]+"</option>");
     $("#selectpicker-edit-alkalinity").append("<option value='c"+id+"'>"+component[0]+"</option>");
     if($("#CopyRowAlkEqn").nextAll("[data-species='c"+id+"']").length!=0){
       $("#selectpicker-edit-alkalinity").children().last().hide();
@@ -83,7 +83,12 @@ function addComponents(){
     if($("#CopyRowAlkEqn").nextAll("[data-species='s"+id+"']").length!=0){
       $("#selectpicker-edit-alkalinity").children().last().hide();
     }
-  })
+    species[3].forEach((item, i) => {
+      $("#selectpicker-component option[value='"+item+"']").each(function(index){
+        $(this).attr("data-tokens", species[0].replace(/([+-])(?:1|([2-9]))?$/, "$2$1")+" "+$(this).attr("data-tokens"))
+      });
+    });
+  });
 }
 
 function chemTextReplaces(){
@@ -711,14 +716,14 @@ function createTableau(){
   async function prepareDocument(){
     let [componentsCSVString, speciesCSVString] = await csvStringPromises;
     componentsCSVString.trim().split("\n").filter((item) => {return !item.match(/^0,(?:""|0)/m);}).forEach((item) => {
-      var match=Array.from(item.matchAll(/("([^"]*)"|[^,\n]*)(,|$)/g));
-      componentsMap.set(match[0][1], [match[1][2], match[5][1]]);
+      var match=Array.from(item.matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
+      componentsMap.set(match[0][1], [match[1][1], match[5][1]]);
     });
-    Array.from(speciesCSVString.trim().matchAll(/(.+)\r?\n(.+)\r?\n(.+)\r?\n/g)).filter((item) => {return !item[0].match(/^0,""/m);}).forEach((item) => {
-      var line1=Array.from(item[1].matchAll(/("([^"]*)"|[^,\n]*)(,|$)/g));
-      var line2=Array.from(item[2].matchAll(/("([^"]*)"|[^,\n]*)(,|$)/g));
-      var line3=Array.from(item[3].matchAll(/("([^"]*)"|[^,\n]*)(,|$)/g));
-      speciesMap.set(line1[0][1], [line1[1][2], line3[0][1], line2.slice(2).filter((item, i) => {return i%2==0;}).map((item) => {return item[1]}),line2.slice(2).filter((item, i) => {return i%2==1;}).map((item) => {return item[1]})]);
+    Array.from(speciesCSVString.trim().matchAll(/(.+?)\r?\n(.+?)\r?\n(.+?)\r?\n/g)).filter((item) => {return !item[0].match(/^0,""/m);}).forEach((item) => {
+      var line1=Array.from(item[1].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
+      var line2=Array.from(item[2].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
+      var line3=Array.from(item[3].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
+      speciesMap.set(line1[0][1], [line1[1][1], line3[0][1], line2.slice(2).filter((item, i) => {return i%2==0;}).map((item) => {return item[1]}),line2.slice(2).filter((item, i) => {return i%2==1;}).map((item) => {return item[1]})]);
     });
     if(documentReady){
       onReady();
