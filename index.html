@@ -160,7 +160,7 @@
                       <div class="adjustWidthToTarget" data-target="component-rows">
                         <div id="component-adder" class="row align-items-baseline">
                           <div class="col-5">
-                            <select data-window-padding="[56, 0, 0, 0]" id="selectpicker-component" data-width="100%" data-live-search="true" class="selectpicker-delay chem-text text-center-selectpicker" title="Add Component">
+                            <select data-window-padding="[56, 0, 0, 0]" id="selectpicker-component" data-width="100%" data-live-search-style='startsWith' data-live-search="true" class="selectpicker-delay chem-text text-center-selectpicker" title="Add Component">
                             </select>
                           </div>
                           <div class="col">
@@ -243,7 +243,7 @@
       </div>
       <div class="row mt-4 block-button-row">
         <div class="col my-no-gutters">
-          <button id="calculate-button" type="button" class="btn btn-primary btn-lg btn-block" onclick="calculate()" data-toggle="tooltip" title="One of the fields is empty or zero!">Calculate</button>
+          <button id="calculate-button" type="button" class="btn btn-primary btn-lg btn-block" onclick="calculate()">Calculate</button>
         </div>
         <div class="col my-no-gutters d-md-none">
           <button id="species-modal-opener" type="button" class="btn btn-secondary btn-lg btn-block" data-toggle="modal" data-target="#species-modal">View Species</button>
@@ -333,7 +333,7 @@
                   <thead>
                     <th scope="col">Species</th>
                     <th scope="col" class="text-center">Equilibrium Concentration</th>
-                    <th scope="col" class="text-center">Log of Concentration</th>
+                    <th scope="col" class="text-center">-Log of Concentration</th>
                   </thead>
                   <tbody id="result-modal-tbody">
                   </tobdy>
@@ -739,7 +739,7 @@
               </div>
               <div class="row">
                 <div class="col-12">
-                  <select data-window-padding="[56, 0, 0, 0]" id="selectpicker-edit-alkalinity" data-width="100%" data-live-search="true" class="selectpicker-delay chem-text text-center-selectpicker" title="Add Term">
+                  <select data-window-padding="[56, 0, 0, 0]" id="selectpicker-edit-alkalinity" data-width="100%" data-live-search-style='startsWith' data-live-search="true" class="selectpicker-delay chem-text text-center-selectpicker" title="Add Term">
                   </select>
                 </div>
               </div>

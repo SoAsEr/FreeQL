@@ -6,9 +6,65 @@ import itertools
 import math
 np.set_printoptions(precision=5)
 
+class Species:
+    def __init__(self, line1, line2, line3):
+        self.id=int(line1[0])
+        self.name=line1[1]
+        self.deltaH=float(line1[2])
+        self.logK=float(line1[3])
+        self.charge=float(line1[6])
+        self.DebeyeHuckelA=float(line1[7])
+        self.DebeyeHuckelB=float(line1[8])
+
+        self.componentAmts=[]
+        self.componentIds=[]
+        for i in range(len(line2)//2):
+            self.componentAmts.append(float(line2[i*2]))
+            self.componentIds.append(int(line2[i*2+1]))
+
+        molWeight=float(line3[0])
+
+
+class Component:
+    def __init__(self, line):
+        self.id=int(line[0])
+        self.name=line[1]
+        self.charge=float(line[2])
+        self.DebeyeHuckelA=float(line[3])
+        self.DebeyeHuckelB=float(line[4])
+        molWeight=float(line[5])
+
+componentDict={}
+speciesDict={}
+
 def grouper(n, iterable, fillvalue=None):
   args = [iter(iterable)] * n
   return itertools.zip_longest(fillvalue=fillvalue, *args)
+
+def speciesCSVStringToDatabase(speciesCSVString):
+    for rowGroup in grouper(3, csv.reader(io.StringIO(speciesCSVString))):
+        if(rowGroup[0][0]==0 or rowGroup[1][0]==0 or rowGroup[2][0]==0):
+            continue
+        #print(rowGroup[0][0])
+        speciesDict[int(rowGroup[0][0])]=Species(rowGroup[0], rowGroup[1], rowGroup[2])
+
+def componentCSVStringToDatabase(componentCSVString):
+    for row in csv.reader(io.StringIO(componentCSVString)):
+        if(row[0]):
+            componentDict[int(row[0])]=Component(row)
+
+
+try:
+    componentCSVStringToDatabase(componentCSVString)
+    speciesCSVStringToDatabase(speciesCSVString)
+    def print(*argv):
+        pass
+except:
+    with open("comp.vdb") as f:
+        componentCSVStringToDatabase(f.read())
+    with open("thermo0.vdb") as f:
+        speciesCSVStringToDatabase(f.read())
+
 
 class Term:
     def __init__(self, id, power):
@@ -23,32 +79,22 @@ class Addend:
     def __init__(self, factor, terms):
         self.terms=terms
         self.factor=factor
-    def eval(self, x, idToPos, replaceDict):
-        result=self.factor
-        for term in self.terms:
-            if(not term.id in replaceDict):
-                result*=pow(x[idToPos[term.id]], term.power)
-            else:
-                result*=pow(replaceDict[term.id].eval(x, idToPos, replaceDict), term.power)
-        return result
-    def partialDerivative(self, id, replaceDict):
-        factor=self.factor
-        terms=[]
-        hitSelf=False
-        noReplaces=False
+
+    def replace(self, replaceDict):
         replacedTerms=copy.deepcopy(self.terms)
-        while(not noReplaces):
-            noReplaces=True
-            thisRoundReplacedTurns=[]
-            for term in replacedTerms:
-                if(term.id in replaceDict):
-                    noReplaces=False
-                    factor*=replaceDict[term.id].factor
-                    for replacingTerms in replaceDict[term.id].terms:
-                        thisRoundReplacedTurns.append(Term(replacingTerms.id, replacingTerms.power*term.power))
-                else:
-                    thisRoundReplacedTurns.append(term)
-            replacedTerms=thisRoundReplacedTurns
+        factor=self.factor
+        thisRoundReplacedTurns=[]
+        replacedAnything=False
+        for term in replacedTerms:
+            if(term.id in replaceDict):
+                replacedAnything=True
+                #print(factor, replaceDict[term.id].factor, term.power)
+                factor*=pow(replaceDict[term.id].factor, term.power)
+                for replacingTerms in replaceDict[term.id].terms:
+                    thisRoundReplacedTurns.append(Term(replacingTerms.id, replacingTerms.power*term.power))
+            else:
+                thisRoundReplacedTurns.append(term)
+        replacedTerms=thisRoundReplacedTurns
 
         totalPowerDict={}
 
@@ -57,11 +103,21 @@ class Addend:
                 totalPowerDict[term.id]=term.power
             else:
                 totalPowerDict[term.id]+=term.power
-
         replacedTerms=[]
         for idPower in totalPowerDict:
             if(totalPowerDict[idPower]!=0):
                 replacedTerms.append(Term(idPower, totalPowerDict[idPower]))
+
+        return replacedTerms, factor, replacedAnything
+    def eval(self, x, idToPos, replaceDict):
+        replacedTerms, result, _=self.replace(replaceDict)
+        for term in replacedTerms:
+            result*=pow(x[idToPos[term.id]], term.power)
+        return result
+    def partialDerivative(self, id, replaceDict):
+        replacedTerms, factor, _=self.replace(replaceDict)
+        hitSelf=False
+        terms=[]
         for term in replacedTerms:
             if(term.id!=id):
                 terms.append(term)
@@ -166,51 +222,6 @@ class System:
         #print(evaluatedJacobian)
         return evaluatedJacobian
 
-
-class Species:
-    def __init__(self, line1, line2, line3):
-        self.id=int(line1[0])
-        self.name=line1[1]
-        self.deltaH=float(line1[2])
-        self.logK=float(line1[3])
-        self.charge=float(line1[6])
-        self.DebeyeHuckelA=float(line1[7])
-        self.DebeyeHuckelB=float(line1[8])
-
-        self.componentAmts=[]
-        self.componentIds=[]
-        for i in range(len(line2)//2):
-            self.componentAmts.append(float(line2[i*2]))
-            self.componentIds.append(int(line2[i*2+1]))
-
-        molWeight=float(line3[0])
-
-
-class Component:
-    def __init__(self, line):
-        self.id=int(line[0])
-        self.name=line[1]
-        self.charge=float(line[2])
-        self.DebeyeHuckelA=float(line[3])
-        self.DebeyeHuckelB=float(line[4])
-        molWeight=float(line[5])
-
-componentDict={}
-speciesDict={}
-
-def speciesCSVStringToDatabase(speciesCSVString):
-    for rowGroup in grouper(3, csv.reader(io.StringIO(speciesCSVString))):
-        if(rowGroup[0][0]==0 or rowGroup[1][0]==0 or rowGroup[2][0]==0):
-            continue
-        #print(rowGroup[0][0])
-        speciesDict[int(rowGroup[0][0])]=Species(rowGroup[0], rowGroup[1], rowGroup[2])
-
-def componentCSVStringToDatabase(componentCSVString):
-    for row in csv.reader(io.StringIO(componentCSVString)):
-        if(row[0]):
-            componentDict[int(row[0])]=Component(row)
-
-
 def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsTableau, solidsVerticalLabels,  alkEqn, alk):
     print(tableau)
     print(horizontalLables)
@@ -219,22 +230,21 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
     print(solidsVerticalLabels)
     assert verticalLables[-1]=="Total Concentrations", "your last row should be the total concentrations"
     horizontalEqns=[]
+    constantReplaceDict={}
+    for j in range(len(horizontalLables)):
+        if(horizontalLables[j][0]=="f"):
+            constantReplaceDict[horizontalLables[j]]=Addend(tableau[-1][j],[])
     for i in range(len(verticalLables)-1):
         terms=[]
-        fixedReplace=1
         for j in range(len(horizontalLables)):
             if(tableau[i][j]!=0):
-                #print(horizontalLables[j])
-                if(horizontalLables[j][0]=="f"):
-                    fixedReplace*=pow(tableau[-1][j], tableau[i][j])
-                else:
-                    terms.append(Term(copy.copy(horizontalLables[j]), tableau[i][j])) #[component]^n
+                terms.append(Term(copy.copy(horizontalLables[j]), tableau[i][j])) #[component]^n
         if(verticalLables[i][0]=="s"):
             #print(speciesDict[int(verticalLables[i][1:])].logK)
             #print(speciesDict[int(verticalLables[i][1:])].logK)
-            horizontalEqns.append(Eqn([Addend(pow(10, speciesDict[int(verticalLables[i][1:])].logK)*fixedReplace, terms)], 0)) #K*[component]^n*[compoenent]^n
+            horizontalEqns.append(Eqn([Addend(pow(10, speciesDict[int(verticalLables[i][1:])].logK), terms)], 0)) #K*[component]^n*[compoenent]^n
         elif(verticalLables[i][0]=="c"):
-            horizontalEqns.append(Eqn([Addend(fixedReplace, terms)], 0))
+            horizontalEqns.append(Eqn([Addend(1, terms)], 0))
 
     #print("horiz", horizontalEqns)
 
@@ -247,6 +257,9 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
                 terms.append(Term(copy.copy(horizontalLables[j]), solidsTableau[i][j])) #[component]^n
         solidsHorizEqns.append(Eqn([Addend(pow(10, speciesDict[int(solidsVerticalLabels[i][1:])].logK), terms)], 0)) #K*[component]^n*[compoenent]^n
 
+    solidCoeffDict={}
+    for j in range(len(horizontalLables)):
+        solidCoeffDict[horizontalLables[j]]=[solidsTableau[i][j] for i in range(len(solidsVerticalLabels))]
     #print("solid horiz", solidsHorizEqns)
 
     if(alk is None):
@@ -290,77 +303,99 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
     solidsCorrect=False
 
     #print(sys.eqns)
-    baseEqns=[]
+    baseEqns={}
     for i in range(len(verticalEqns)):
         #print(sys.eqns)
         if(horizontalLables[i][0]!="f"):
             #print("Should be raw",eqnCopy)
-            baseEqns.append(verticalEqns[i])
+            baseEqns[verticalEqns[i].id]=verticalEqns[i]
 
     while(True):
-        replaceDict={}
+        replaceDict=copy.deepcopy(constantReplaceDict)
         currentEqnsSet=copy.deepcopy(baseEqns)
         for i in solidsPresent:
             replacing=0
+            print(replaceDict)
+            extraFactor=1
             for j, term in enumerate(solidsHorizEqns[i].addends[0].terms):
+                print(term)
+                if term.id in constantReplaceDict:
+                    continue
                 if term.id not in replaceDict:
                     replacing=j
                     break
-            addend=Addend(1/solidsHorizEqns[i].addends[0].factor, [])
+            addend=Addend(pow(solidsHorizEqns[i].addends[0].factor/extraFactor, -1/solidsHorizEqns[i].addends[0].terms[replacing].power), [])
             for j, term in enumerate(solidsHorizEqns[i].addends[0].terms):
                 if(j==replacing):
                     continue
                 addend.terms.append(Term(term.id, -term.power/solidsHorizEqns[i].addends[0].terms[replacing].power))
             replaceDict[solidsHorizEqns[i].addends[0].terms[replacing].id]=addend
-            subtrahends=None
-            for eqn in baseEqns:
-                if(eqn.id==solidsHorizEqns[i].addends[0].terms[replacing].id):
-                    subtrahendEqn=eqn
-                    break
+            print(replaceDict)
+            subtrahendEqn=baseEqns[solidsHorizEqns[i].addends[0].terms[replacing].id]
             #print(currentEqnsSet)
-            for eqn in currentEqnsSet:
-                for term in addend.terms:
-                    if(eqn.id==term.id):
-                        subtrahendAppend=[]
-                        for addend in copy.deepcopy(subtrahendEqn.addends):
-                            addend.factor*=term.power*solidsHorizEqns[i].addends[0].terms[replacing].power
-                            subtrahendAppend.append(addend)
-                        #print("current addends", eqn.addends)
-                        #print("what we're subtracting", subtrahendAppend)
-                        eqn.addends+=subtrahendAppend
-                        eqn.constant-=subtrahendEqn.constant
-                        break
+            for term in addend.terms:
+                if(term.id in constantReplaceDict):
+                    continue
+                eqn=currentEqnsSet[term.id]
+                subtrahendAppend=[]
+                for addend in copy.deepcopy(subtrahendEqn.addends):
+                    addend.factor*=term.power #shortcut to stochiometric coeffecient
+                    subtrahendAppend.append(addend)
+                #print("current addends", eqn.addends)
+                #print("what we're subtracting", subtrahendAppend)
+                eqn.addends+=subtrahendAppend
+                eqn.constant-=subtrahendEqn.constant
+                break
             #print(currentEqnsSet)
+        print("replaceDict", replaceDict)
+        replaceMade=True
+        preReplaceDict=copy.deepcopy(replaceDict)
+        while(replaceMade):
+            replaceMade=False
+            for component in replaceDict:
+                terms, factor, success=replaceDict[component].replace(preReplaceDict)
+                replaceMade=replaceMade or success
+                if(success):
+                    print("hhhhh")
+                    newTerms=[]
+                    adjustPower=1
+                    for term in terms:
+                        if(term.id==component):
+                            adjustPower+=-term.power
+                        else:
+                            newTerms.append(term)
+                    factor=pow(factor, adjustPower)
+                    for term in newTerms:
+                        term.power*=adjustPower
+                    replaceDict[component]=Addend(factor, newTerms)
+        print("replaceDict", replaceDict)
 
-        #print("replaceDict", replaceDict)
-        #print("solidsPresent", solidsPresent)
 
         sys=System()
-        for eqn in currentEqnsSet:
-            if(eqn.id in replaceDict):
+        for eqnid in currentEqnsSet:
+            eqn=currentEqnsSet[eqnid]
+            if(eqnid in replaceDict):
                 continue
             sys.addEqn(copy.deepcopy(eqn), replaceDict)
-        #print("eqns", sys.eqns)
+        print("eqns", sys.eqns)
 
         sys.calcJacobian(replaceDict)
 
-        #print("jacs", sys.jacobianeqns)
+        print("jacs", sys.jacobianeqns)
         converged=False
 
-        #print(sys.eqns)
-        #print(sys.idToPos)
+        print(sys.idToPos)
         #xn=np.array([[pow(10, -9.91)], [pow(10, -3.91)]]+[[1e-7] for i in range(2, len(sys.eqns))])
-        xn=np.full((len(sys.eqns), 1), 1e-7)
+        xn=np.full((len(sys.eqns), 1), 1e-5)
         #print(xn)
         delta=0
         xnOld=None
-        for i in range(100):
+        for i in range(30):
+            if(len(sys.eqns)==0):
+                break
             #print("xn",xn)
             y, maxy=sys.eval(xn, replaceDict)
-            #print("y", y)
-            #print("y", y)
-            #print("eqns", sys.eqns)-----
-            #print("jacs", sys.jacobianeqns)
+            #print("y",y)
             jacEval=sys.evalJacobian(xn, replaceDict)
             #print("jac", jacEval)
             delta=np.linalg.solve(jacEval, y)
@@ -368,6 +403,8 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
             #print("delta", delta)
             xnOld=xn
             xn=xn-delta;
+            #print("maxy",maxy)
+            #print("divide", np.divide(y, maxy))
             for term, termOld in zip(xn, xnOld):
                 if(term[0]<=0):
                     term[0]=termOld[0]/10
@@ -393,19 +430,42 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
 
         solidsCalcDict[solidsPresentHash]=True
 
-        for i in solidsPresent:
-            if(solidsHorizEqns[i].eval(xn, sys.idToPos, replaceDict)[0]<0.99):
-                newHash==solidsPresentHash^(1<<i)
+        solidAmtEqnDict={}
+        print(replaceDict)
+        print(constantReplaceDict)
+        for component in replaceDict:
+            if(component in constantReplaceDict):
+                continue
+            print(component)
+            solidAmtEqnDict[component]=[solidCoeffDict[component][i] for i in solidsPresent]
+        print(solidAmtEqnDict)
+        solidCoeffs=np.zeros((len(solidsPresent), len(solidsPresent)))
+        solidAmts=np.zeros((len(solidsPresent), 1))
+        for i, component in enumerate(solidAmtEqnDict):
+            solidAmts[i]=-baseEqns[component].eval(xn, sys.idToPos, replaceDict)[0]
+            for j in range(len(solidsPresent)):
+                solidCoeffs[i][j]=solidAmtEqnDict[component][j]
+        print(solidCoeffs)
+        print(solidAmts)
+        solidAmtResults=np.linalg.solve(solidCoeffs, solidAmts)
+        print(solidAmtResults)
+        for iterator, i in enumerate(solidsPresent):
+            if(solidAmtResults[iterator]<0):
+                newHash=solidsPresentHash^(1<<i)
+                print(newHash)
+                print(solidsCalcDict)
                 if(newHash in solidsCalcDict):
-                    print("stopped loop1")
+                    print("stopped loop2")
                     continue
                 else:
+                    print("removing solid", speciesDict[int(solidsVerticalLabels[i][1:])].name)
                     solidsPresent.remove(i)
                     solidsPresentHash=newHash
-                    print("removing solid")
-                    break
+                    break;
         else:
             for i in range(len(solidsVerticalLabels)):
+                print(solidsHorizEqns[i])
+                print("SOLIDS",solidsHorizEqns[i].eval(xn, sys.idToPos, replaceDict)[0])
                 if(not i in solidsPresent and solidsHorizEqns[i].eval(xn, sys.idToPos, replaceDict)[0]>=1):
                     newHash=solidsPresentHash^(1<<i)
                     print(newHash)
@@ -414,7 +474,7 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
                         print("stopped loop2")
                         continue
                     else:
-                        print("adding solid")
+                        print("adding solid", speciesDict[int(solidsVerticalLabels[i][1:])].name)
                         solidsPresent.append(i)
                         solidsPresentHash=newHash
                         break;
@@ -426,10 +486,11 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
                 #print("horiz", horizontalEqns)
                 for i in range(len(verticalLables)-1):
                     res, _=horizontalEqns[i].eval(xn, sys.idToPos, replaceDict)
+                    print(res)
                     if(verticalLables[i][0]=="c" or verticalLables[i][0]=="f"):
-                        result[componentDict[int(verticalLables[i][1:])].name]=-math.log10(res[0])
+                        result[componentDict[int(verticalLables[i][1:])].name]=-math.log10(res)
                     else:
-                        result[speciesDict[int(verticalLables[i][1:])].name]=-math.log10(res[0])
+                        result[speciesDict[int(verticalLables[i][1:])].name]=-math.log10(res)
                 for i in solidsPresent:
                     result[speciesDict[int(solidsVerticalLabels[i][1:])].name]=1
                 print(result)
@@ -451,10 +512,7 @@ def solutionFromWholeTableau(tableau, alkEquation=[["c330", -1], ["s3301400", 1]
 
     return solutionFromPiecedTableau(strTableau, tableau[0][1:], strVerticalLabels, solidsTableau, solidsVerticalLabels, alkEquation, alk)
 
-with open("comp.vdb") as f:
-    componentCSVStringToDatabase(f.read())
-with open("thermo0.vdb") as f:
-    speciesCSVStringToDatabase(f.read())
+'''
 solutionFromWholeTableau(
 [
 ["","c140", "c330","c150"],
@@ -468,8 +526,60 @@ solutionFromWholeTableau(
 ["s3301401", 1, 2, 0],
 ["s3300020", 0, -1, 0],
 ["z5015001", 1, 0, 1],
+["z2015000", 0, -2, 1],
 ["Total Concentrations", 1e-3, 0, 1e-3]
 ])
+'''
+'''
+solutionFromWholeTableau(
+[
+["", "c330", "c150", "c140", "c460", "c100", "c732", "c580"],
+["c330", "1", "0", "0", "0", "0", "0", "0"],
+["s3300020", "-1", "0", "0", "0", "0", "0", "0"],
+["c150", "0", "1", "0", "0", "0", "0", "0"],
+["s1503300", "-1", "1", "0", "0", "0", "0", "0"],
+["z2015000", "-2", "1", "0", "0", "0", "0", "0"],
+["c140", "0", "0", "1", "0", "0", "0", "0"],
+["s3301400", "1", "0", "1", "0", "0", "0", "0"],
+["s3301401", "2", "0", "1", "0", "0", "0", "0"],
+["s1501400", "1", "1", "1", "0", "0", "0", "0"],
+["s1501401", "0", "1", "1", "0", "0", "0", "0"],
+["z5015001", "0", "1", "1", "0", "0", "0", "0"],
+["c460", "0", "0", "0", "1", "0", "0", "0"],
+["s4603300", "-1", "0", "0", "1", "0", "0", "0"],
+["s4601400", "0", "0", "1", "1", "0", "0", "0"],
+["s4601401", "1", "0", "1", "1", "0", "0", "0"],
+["s4601402", "0", "0", "1", "2", "0", "0", "0"],
+["z2046000", "-2", "0", "0", "1", "0", "0", "0"],
+["z5046002", "0", "0", "1", "1", "0", "0", "0"],
+["z5015002", "0", "1", "2", "1", "0", "0", "0"],
+["z5015003", "0", "1", "4", "3", "0", "0", "0"],
+["c100", "0", "0", "0", "0", "1", "0", "0"],
+["s1003300", "-1", "0", "0", "0", "1", "0", "0"],
+["s1001401", "0", "0", "1", "0", "1", "0", "0"],
+["s1001400", "1", "0", "1", "0", "1", "0", "0"],
+["c732", "0", "0", "0", "0", "0", "1", "0"],
+["s3307320", "1", "0", "0", "0", "0", "1", "0"],
+["s4607320", "0", "0", "0", "1", "0", "1", "0"],
+["s1507320", "0", "1", "0", "0", "0", "1", "0"],
+["s1007320", "0", "0", "0", "0", "1", "1", "0"],
+["z6010000", "0", "0", "0", "0", "1", "1", "0"],
+["c580", "0", "0", "0", "0", "0", "0", "1"],
+["s3305800", "1", "0", "0", "0", "0", "0", "1"],
+["s3305801", "2", "0", "0", "0", "0", "0", "1"],
+["s3305802", "3", "0", "0", "0", "0", "0", "1"],
+["s1005800", "1", "0", "0", "0", "1", "0", "1"],
+["s4605800", "0", "0", "0", "1", "0", "0", "1"],
+["s4605802", "1", "0", "0", "1", "0", "0", "1"],
+["s1505800", "1", "1", "0", "0", "0", "0", "1"],
+["s1505801", "0", "1", "0", "0", "0", "0", "1"],
+["s1505802", "2", "1", "0", "0", "0", "0", "1"],
+["z7015003", "-1", "5", "0", "0", "0", "0", "3"],
+["z7015005", "1", "1", "0", "0", "0", "0", "1"],
+["Total Concentrations", "2.0000e-4", "1.0000e-2", "1.0000e-3", "5.0000e-2", "1.0000e-4", "1.0000e-3", "1.0000e-4"]
+])
+'''
+
 
 #["z5015001", 1, 0, 1]
 #["2015000", 1, -2, 0]

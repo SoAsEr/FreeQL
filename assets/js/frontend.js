@@ -6,6 +6,8 @@ let pasteUndo=[];
 
 var componentsMap=new Map();
 var speciesMap=new Map();
+var solidsMap=new Map();
+var gasesMap=new Map();
 
 
 //https://stackoverflow.com/questions/3954438/how-to-remove-item-from-array-by-value
@@ -72,7 +74,7 @@ function chemTextReplace(str){
 
 function addComponents(){
   componentsMap.forEach(function(component, id){
-    if(id==2){
+    if(id==2 || id==1){
       return;
     }
     $("#selectpicker-component").append("<option data-tokens='' value='"+id+"'>"+component[0]+"</option>");
@@ -189,7 +191,13 @@ function createTableau(){
       if(species[0]=="s"){
         return firstRow.map((component, index) => {
           if(index==0){
-            return species;
+            if(gasesMap.has(species.substr(1))){
+              return "g"+species.substr(1);
+            } else if(solidsMap.has(species.substr(1))){
+              return "z"+species.substr(1);
+            } else {
+              return species;
+            }
           }
           var componentLoc=speciesMap.get(species.substr(1))[3].indexOf(component.substr(1));
           if(componentLoc==-1){
@@ -216,7 +224,7 @@ function createTableau(){
     })]);
 }
 function replaceSpeciesWithName(species){
-  if(species[0]=="s"){
+  if(species[0]=="s" || species[0]=="g"){
     return speciesMap.get(species.substr(1))[0];
   } else if(species[0]=="c" || species[0]=="f" || species[0]=="a"){
     return componentsMap.get(species.substr(1))[0];
@@ -271,7 +279,7 @@ function handleResultEvent(e){
     $("#result-modal-scroller").show();
     $("#download-results").attr("href", getDataURIFromResult(e.data[1][0]));
     for(const species in e.data[1][0]){
-      $("#result-modal-tbody").append('<tr><th scope="row">'+chemTextReplace(species)+'</th><td>'+prettyExpWithSigs(e.data[1][0][species])+'</td><td>'+Math.log10(e.data[1][0][species]).toFixed(2)+'</td></tr>');
+      $("#result-modal-tbody").append('<tr><th scope="row">'+chemTextReplace(species)+'</th><td>'+prettyExpWithSigs(e.data[1][0][species])+'</td><td>'+(-Math.log10(e.data[1][0][species])).toFixed(2)+'</td></tr>');
     }
   } else {
     $("#result-failed").show();
@@ -308,11 +316,6 @@ async function calculate(){
   $("#result-modal-scroller").hide();
   $("#result-failed").hide();
   var tableau=createTableau();
-  console.log(tableau.slice(-1));
-  if(tableau.slice(-1).some((element) => Number(element)==0)){
-    $("#calculate-button").tooltip('enable');
-    return;
-  }
   console.log(tableau);
   var args="[";
   tableau.forEach((itemi) => {
@@ -758,26 +761,46 @@ $( document ).ready(function(){
 });
 
 var csvStringPromises  = Promise.all([
-  fetch("/assets/solver/M4_comp.csv").then(function(response){
+  fetch("/assets/solver/comp.vdb").then(function(response){
     return response.text();
   }),
-  fetch("/assets/solver/M4_thermo.csv").then(function(response){
+  fetch("/assets/solver/thermo.vdb").then(function(response){
+    return response.text();
+  }),
+  fetch("/assets/solver/type6.vdb").then(function(response){
+    return response.text();
+  }),
+  fetch("/assets/solver/gases.vdb").then(function(response){
     return response.text();
   }),
 ]);
 
 async function prepareDocument(){
-  let [componentsCSVString, speciesCSVString] = await csvStringPromises;
-  componentsCSVString.trim().split("\n").filter((item) => {return !item.match(/^0,(?:""|0)/m);}).forEach((item) => {
+  let [componentsCSVString, speciesCSVString, solidsCSVString, gasesCSVString] = await csvStringPromises;
+  componentsCSVString.trim().split("\n").filter((item) => {return !item.match(/^0,/m);}).forEach((item) => {
     var match=Array.from(item.matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
     componentsMap.set(match[0][1], [match[1][1], match[5][1]]);
   });
-  Array.from(speciesCSVString.trim().matchAll(/(.+?)\r?\n(.+?)\r?\n(.+?)\r?\n/g)).filter((item) => {return !item[0].match(/^0,""/m);}).forEach((item) => {
+  Array.from(speciesCSVString.trim().matchAll(/(.+?)\r?\n(.+?)\r?\n(.+?)\r?\n/g)).filter((item) => {return !item[0].match(/^0,/m);}).forEach((item) => {
     var line1=Array.from(item[1].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
     var line2=Array.from(item[2].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
     var line3=Array.from(item[3].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
-    speciesMap.set(line1[0][1], [line1[1][1], line3[0][1], line2.slice(2).filter((item, i) => {return i%2==0;}).map((item) => {return item[1]}),line2.slice(2).filter((item, i) => {return i%2==1;}).map((item) => {return item[1]})]);
+    speciesMap.set(line1[0][1], [line1[1][1], line3[0][1], line2.filter((item, i) => {return i%2==0;}).map((item) => {return item[1]}),line2.filter((item, i) => {return i%2==1;}).map((item) => {return item[1]})]);
   });
+  Array.from(gasesCSVString.trim().matchAll(/(.+?)\r?\n(.+?)\r?\n(.+?)\r?\n/g)).filter((item) => {return !item[0].match(/^0,/m);}).forEach((item) => {
+    var line1=Array.from(item[1].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
+    gasesMap.set(line1[0][1], true);
+  });
+  Array.from(solidsCSVString.trim().matchAll(/(.+?)\r?\n(.+?)\r?\n(.+?)\r?\n/g)).filter((item) => {return !item[0].match(/^0,/m);}).forEach((item) => {
+    var line1=Array.from(item[1].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
+    if(!gasesMap.has(line1[0][1])){
+      solidsMap.set(line1[0][1], true);
+    }
+  });
+  console.log(solidsMap)
+  console.log(gasesMap)
+  console.log(componentsMap)
+  console.log(speciesMap)
   if(documentReady){
     onReady();
   } else {
