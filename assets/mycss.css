@@ -16,10 +16,6 @@ body {
   text-align-last: center;
 }
 
-span.icon:hover{
-  filter: invert(22%) sepia(64%) saturate(6709%) hue-rotate(245deg) brightness(63%) contrast(128%);;
-}
-
 .cursor-info{
   cursor: help !important;
 }
