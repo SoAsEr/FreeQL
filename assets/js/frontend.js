@@ -9,7 +9,6 @@ var speciesMap=new Map();
 var solidsMap=new Map();
 var gasesMap=new Map();
 
-
 //https://stackoverflow.com/questions/3954438/how-to-remove-item-from-array-by-value
 Array.prototype.remove = function() {
   var what, a = arguments, L = a.length, ax;
@@ -21,6 +20,28 @@ Array.prototype.remove = function() {
   }
   return this;
 };
+
+function speciesArraysEqual(a, b) {
+  a.sort();
+  b.sort();
+  a.remove("2");
+  b.remove("2");
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  if (a.length !== b.length) return false;
+
+  // If you don't care about the order of the elements inside
+  // the array, you should sort both arrays here.
+  // Please note that calling sort on an array will modify that array.
+  // you might want to clone your array first.
+
+  for (var i = 0; i < a.length; ++i) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+
 
 //https://www.geeksforgeeks.org/implementation-stack-javascript/
 class Stack {
@@ -124,7 +145,23 @@ function addSpecies(toAddVal){
       $("#species-list").append("<li class='list-group-item' data-species='s"+id+"'><div class='d-flex justify-content-center'><div class='centering-div'></div><div class='species-label'>"+chemTextReplace(species[0])+"</div><div class='centering-div form-check-container'><div class='form-check form-check-inline'><input type='checkbox' class='form-check-input species-check' checked></div></div></div></li>");
     }
   });
-
+  $("#species-list").children().each(function(){
+    if($(this).attr("data-species")[0]=="s" && gasesMap.has($(this).attr("data-species").substr(1))){
+      $(this).remove();
+    }
+  });
+  $($("#species-list").children().get().reverse()).each(function(){
+    if($(this).attr("data-species")[0]=="c"){
+      $(this).prependTo($("#species-list"));
+    }
+  });
+  $("#species-list").children().each(function(){
+    if($(this).attr("data-species")[0]=="s" && solidsMap.has($(this).attr("data-species").substr(1))){
+      $(this).find(".species-check").prop("checked", false);
+      $(this).addClass("disabled");
+      $(this).appendTo($("#species-list"));
+    }
+  });
 }
 
 
@@ -416,15 +453,41 @@ function showTableau(){
   });
 }
 
+function onSpeciesCheckClick(element){
+  if(element.checked){
+    $(element).closest(".list-group-item").removeClass("disabled");
+    var actualElement=$(element).closest(".list-group-item");
+    var speciesValue=$(actualElement).attr("data-species").substr(1);
+    if($(actualElement).attr("data-species")[0]=="s" && solidsMap.has(speciesValue)){
+      var speciesList=speciesMap.get(speciesValue)[3]
+      solidsMap.forEach((value, key) => {
+        if(key!=speciesValue && speciesArraysEqual(speciesMap.get(key)[3], speciesList)){
+          //console.log("[data-species='s"+key+"']")
+          $("#species-list").children("[data-species='s"+key+"']").find(".species-check").prop("disabled", true)
+        }
+      });
+    }
+  } else {
+    var actualElement=$(element).closest(".list-group-item");
+    $(actualElement).addClass("disabled");
+    var speciesValue=$(actualElement).attr("data-species").substr(1);
+    if($(actualElement).attr("data-species")[0]=="s" && solidsMap.has(speciesValue)){
+      var speciesList=speciesMap.get(speciesValue)[3]
+      solidsMap.forEach((value, key) => {
+        if(key!=speciesValue && speciesArraysEqual(speciesMap.get(key)[3], speciesList)){
+          //console.log("[data-species='s"+key+"']")
+          $("#species-list").children("[data-species='s"+key+"']").find(".species-check").prop("disabled", false)
+        }
+      });
+    }
+  }
+}
+
 function updateSpeciesInModal(){
   $("#species-modal").find(".modal-body").empty();
   $("#species-modal").find(".modal-body").append($("#species-list").clone().attr("id", "species-list-modal"));
   $("#species-modal").find(".modal-body").find(".species-check").click(function(event){
-    if(this.checked){
-      $(this).closest(".list-group-item").removeClass("disabled");
-    } else {
-      $(this).closest(".list-group-item").addClass("disabled");
-    }
+    onSpeciesCheckClick(this);
   });
 }
 function saveModalChangesToList(){
@@ -610,11 +673,7 @@ function onReady(){
     });
 
     $(".species-check").click(function(event){
-      if(this.checked){
-        $(this).closest(".list-group-item").removeClass("disabled");
-      } else {
-        $(this).closest(".list-group-item").addClass("disabled");
-      }
+      onSpeciesCheckClick(this);
     });
 
     $("#component-rows").append(newRow);
