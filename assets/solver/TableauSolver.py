@@ -59,10 +59,6 @@ def componentCSVStringToDatabase(componentCSVString):
 try:
     componentCSVStringToDatabase(componentCSVString)
     speciesCSVStringToDatabase(speciesCSVString)
-    def print(*argv):
-        pass
-    def printNoMatter(*argv):
-        print(*argv)
 except:
     with open("comp.vdb") as f:
         componentCSVStringToDatabase(f.read())
@@ -544,9 +540,9 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
                         print(res)
                         if(verticalLables[i][0]=="c" or verticalLables[i][0]=="f"):
                             #result[componentDict[int(verticalLables[i][1:])].name]=-math.log10(res)
-                            result[componentDict[int(verticalLables[i][1:])].name]=res
+                            result[componentDict[int(verticalLables[i][1:])].name]=float(res)
                         else:
-                            result[speciesDict[int(verticalLables[i][1:])].name]=res
+                            result[speciesDict[int(verticalLables[i][1:])].name]=float(res)
                     for i in solidsPresent:
                         result[speciesDict[int(solidsVerticalLabels[i][1:])].name]=1
                     print(result)
@@ -635,7 +631,7 @@ solutionFromWholeTableau(
 ["Total Concentrations", "2.0000e-4", "1.0000e-2", "1.0000e-3", "5.0000e-2", "1.0000e-4", "1.0000e-3", "1.0000e-4"]
 ])
 '''
-
+'''
 solutionFromWholeTableau([
 [""        , "f330", "c460", "c140", "c150"],
 ["c330"    , "1"   , "0"   , "0"   , "0"],
@@ -657,7 +653,11 @@ solutionFromWholeTableau([
 ["z5015002", "0"   , "1"   , "2"   , "1"], #dolomite
 ["Total Concentrations", pow(10, -10.3), "5.0000e-3", "5.0000e-3", "5.0000e-3"]
 ])
-
+'''
+solutionFromWholeTableau([["", "c330"],
+["c330", "1"],
+["s3300020", "-1"],
+["Total Concentrations", "0.0000e+0"]])
 
 
 #["z5015001", 1, 0, 1]
