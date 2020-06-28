@@ -820,16 +820,16 @@ $( document ).ready(function(){
 });
 
 var csvStringPromises  = Promise.all([
-  fetch("/assets/solver/comp.vdb").then(function(response){
+  fetch("assets/solver/comp.vdb").then(function(response){
     return response.text();
   }),
-  fetch("/assets/solver/thermo.vdb").then(function(response){
+  fetch("assets/solver/thermo.vdb").then(function(response){
     return response.text();
   }),
-  fetch("/assets/solver/type6.vdb").then(function(response){
+  fetch("assets/solver/type6.vdb").then(function(response){
     return response.text();
   }),
-  fetch("/assets/solver/gases.vdb").then(function(response){
+  fetch("assets/solver/gases.vdb").then(function(response){
     return response.text();
   }),
 ]);

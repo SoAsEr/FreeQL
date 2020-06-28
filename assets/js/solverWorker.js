@@ -4,13 +4,13 @@ async function prepareTableauObjects(){
   await languagePluginLoader;
   let [,speciesCSVString, componentCSVString, setupCode] = await Promise.all([
     pyodide.loadPackage('numpy'),
-    fetch("/assets/solver/thermo.vdb").then(function(response){
+    fetch("assets/solver/thermo.vdb").then(function(response){
       return response.text();
     }),
-    fetch("/assets/solver/comp.vdb").then(function(response){
+    fetch("assets/solver/comp.vdb").then(function(response){
       return response.text();
     }),
-    fetch("/assets/solver/TableauSolver.py").then(function(response){
+    fetch("assets/solver/TableauSolver.py").then(function(response){
       return response.text();
     })
   ]);
