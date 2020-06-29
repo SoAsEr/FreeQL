@@ -183,12 +183,12 @@ function adjustDontOverflows(){
   $(".dont-overflow-y").each(function(){
     $(this).css("max-height", "calc(100vh - "+$(this)[0].getBoundingClientRect().y+"px - "+$(this).nextAll().map(function(){
       return $(this)[0].getBoundingClientRect().height;
-    }).toArray().reduce((accumulator, currentValue) => accumulator + currentValue, 0)+"px - 219.177px)");
+    }).toArray().reduce((accumulator, currentValue) => accumulator + currentValue, 0)+"px - 224px)");
   });
   $(".fill-screen-y").each(function(){
     $(this).css("height", "calc(100vh - "+$(this)[0].getBoundingClientRect().y+"px - "+$(this).nextAll().map(function(){
       return $(this)[0].getBoundingClientRect().height;
-    }).toArray().reduce((accumulator, currentValue) => accumulator + currentValue, 0)+"px - 219.177px)");
+    }).toArray().reduce((accumulator, currentValue) => accumulator + currentValue, 0)+"px - 224px)");
   });
 }
 
