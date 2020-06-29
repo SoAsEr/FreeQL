@@ -261,7 +261,7 @@ function createTableau(){
     })]);
 }
 function replaceSpeciesWithName(species){
-  if(species[0]=="s" || species[0]=="g"){
+  if(species[0]=="s" || species[0]=="z"){
     return speciesMap.get(species.substr(1))[0];
   } else if(species[0]=="c" || species[0]=="f" || species[0]=="a"){
     return componentsMap.get(species.substr(1))[0];
@@ -274,11 +274,28 @@ function toReadableTableau(tableau){
     if(component[0]=="f" || component[0]=="a"){
       tableau[tableau.length-1][index]="TBD";
     }
-  })
+  });
+  tableau=tableau.map((row, index) => {
+    if(index==0){
+      return row.concat(["logK"]);
+    }
+    if(index==tableau.length-1){
+      return row.concat([""]);
+    }
+    if(row[0][0]=="c"){
+      return row.concat(["0"]);
+    }
+    if(row[0][0]=="z"){
+      return row.concat([-speciesMap.get(row[0].substr(1))[4]]);
+    }
+    return row.concat([speciesMap.get(row[0].substr(1))[4]]);
+  });
+  console.log(tableau)
   tableau[0]=tableau[0].map(component => replaceSpeciesWithName(component));
   tableau.forEach(row => {
     row[0]=replaceSpeciesWithName(row[0]);
   });
+
 
   return tableau;
 }
@@ -330,7 +347,7 @@ function startSolverWorker(){
   solverWorker.onmessage=function(e){
     if(e.data[0]==1){
       if(pythonBuffer!=""){
-        console.log("heelo")
+        //console.log("heelo")
         solverWorker.postMessage(pythonBuffer)
         pythonBuffer="";
       }
@@ -844,7 +861,7 @@ async function prepareDocument(){
     var line1=Array.from(item[1].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
     var line2=Array.from(item[2].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
     var line3=Array.from(item[3].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
-    speciesMap.set(line1[0][1], [line1[1][1], line3[0][1], line2.filter((item, i) => {return i%2==0;}).map((item) => {return item[1]}),line2.filter((item, i) => {return i%2==1;}).map((item) => {return item[1]})]);
+    speciesMap.set(line1[0][1], [line1[1][1], line3[0][1], line2.filter((item, i) => {return i%2==0;}).map((item) => {return item[1]}),line2.filter((item, i) => {return i%2==1;}).map((item) => {return item[1]}), line1[3][1]]);
   });
   Array.from(gasesCSVString.trim().matchAll(/(.+?)\r?\n(.+?)\r?\n(.+?)\r?\n/g)).filter((item) => {return !item[0].match(/^0,/m);}).forEach((item) => {
     var line1=Array.from(item[1].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
@@ -856,9 +873,9 @@ async function prepareDocument(){
       solidsMap.set(line1[0][1], true);
     }
   });
-  console.log(solidsMap)
-  console.log(gasesMap)
-  console.log(componentsMap)
+  //console.log(solidsMap)
+  //console.log(gasesMap)
+  //console.log(componentsMap)
   console.log(speciesMap)
   if(documentReady){
     onReady();
