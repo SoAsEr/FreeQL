@@ -101,16 +101,19 @@ class Addend:
             return replacedTerms, factor, True
         else:
             return self.terms, self.factor, False
-    def eval(self, x, idToPos, replaceDict):
-        replacedTerms, result, _=self.replace(replaceDict)
-        for term in replacedTerms:
+    def updateReplacedTerms(self, replaceDict):
+        self.replacedTerms, self.replacedFactor, _=self.replace(replaceDict)
+
+    def eval(self, x, idToPos):
+        result=self.replacedFactor
+        for term in self.replacedTerms:
             result*=pow(x[idToPos[term.id]], term.power)
         return result
-    def partialDerivative(self, id, replaceDict):
-        replacedTerms, factor, _=self.replace(replaceDict)
+    def partialDerivative(self, id):
+        factor=self.replacedFactor
         hitSelf=False
         terms=[]
-        for term in replacedTerms:
+        for term in self.replacedTerms:
             if(term.id!=id):
                 terms.append(term)
             else:
@@ -137,21 +140,26 @@ class Eqn:
         self.constant=constant
         self.id=id
 
-    def evalWithMax(self, x, idToPos, replaceDict):
+    def evalWithMax(self, x, idToPos):
         maxAddend=0
         result=self.constant
         for addend in self.addends:
-            evalAddend=addend.eval(x, idToPos, replaceDict)
+            evalAddend=addend.eval(x, idToPos)
             result+=evalAddend
             if(abs(evalAddend)>maxAddend):
                 maxAddend=abs(evalAddend)
         return result, maxAddend
 
-    def eval(self, x, idToPos, replaceDict):
+    def eval(self, x, idToPos):
         result=self.constant
         for addend in self.addends:
-            result+=addend.eval(x, idToPos, replaceDict)
+            result+=addend.eval(x, idToPos)
         return result
+
+    def updateReplacedTerms(self, replaceDict):
+        for addend in self.addends:
+            addend.updateReplacedTerms(replaceDict)
+
     def __str__(self):
         ret=""
         for addend in self.addends:
@@ -169,7 +177,7 @@ class System:
         self.eqns=[]
         self.jacobianeqns=[]
 
-    def addEqn(self, eqn, replaceDict):
+    def addEqn(self, eqn):
         #replace the eqn with the right jacobian position
         self.posToId[self.size]=eqn.id
         self.idToPos[eqn.id]=self.size
@@ -177,15 +185,25 @@ class System:
         self.eqns.append(eqn)
 
     def calcJacobian(self, replaceDict):
-        self.jacobianeqns=[[Eqn([addend.partialDerivative(self.posToId[j], replaceDict) for addend in eqn.addends], 0) for j in range(self.size)] for eqn in self.eqns]
+        self.jacobianeqns=[[Eqn([addend.partialDerivative(self.posToId[j]) for addend in eqn.addends], 0) for j in range(self.size)] for eqn in self.eqns]
+        for row in self.jacobianeqns:
+            for eqn in row:
+                eqn.updateReplacedTerms(replaceDict)
 
-    def evalWithMax(self, x, replaceDict):
-        return zip(*(self.eqns[i].evalWithMax(x, self.idToPos, replaceDict) for i in range(self.size)))
-    def eval(self, x, replaceDict):
-        return (self.eqns[i].evalWithMax(x, self.idToPos, replaceDict) for i in range(self.size))
+    def evalWithMax(self, x):
+        return zip(*(self.eqns[i].evalWithMax(x, self.idToPos) for i in range(self.size)))
+    def eval(self, x):
+        return (self.eqns[i].evalWithMax(x, self.idToPos) for i in range(self.size))
 
-    def evalJacobian(self, x, replaceDict):
-        return [[float(eqn.eval(x, self.idToPos, replaceDict)) for eqn in row] for row in self.jacobianeqns]
+    def evalJacobian(self, x):
+        return [[float(eqn.eval(x, self.idToPos)) for eqn in row] for row in self.jacobianeqns]
+
+    def updateReplacedTerms(self, replaceDict):
+        for eqn in self.eqns:
+            eqn.updateReplacedTerms(replaceDict)
+        for row in self.jacobianeqns:
+            for eqn in row:
+                eqn.updateReplacedTerms(replaceDict)
 
 def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsTableau, solidsVerticalLabels,  alkEqn, alk):
     #assert verticalLabels[-1]=="Total Concentrations", "your last row should be the total concentrations"
@@ -272,14 +290,15 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
                     replaceDict[component]=Addend(factor, newTerms)
         #print("replaceDict", replaceDict)
         #print(currentEqnsSet)
-
         sys=System()
         for eqnid, eqn in currentEqnsSet.items():
             if(eqnid in replaceDict):
                 continue
-            sys.addEqn(eqn, replaceDict)
+            sys.addEqn(eqn)
+
         #print("eqns", sys.eqns)
         if(len(sys.eqns)>0):
+            sys.updateReplacedTerms(replaceDict)
             sys.calcJacobian(replaceDict)
 
             #print("jacs", sys.jacobianeqns)
@@ -290,9 +309,9 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
             #newton-rhapson
             for i in range(30):
                 #print("xn",xn)
-                y, maxy=sys.evalWithMax(xn, replaceDict)
+                y, maxy=sys.evalWithMax(xn)
                 #print("y",y)
-                jacEval=sys.evalJacobian(xn, replaceDict)
+                jacEval=sys.evalJacobian(xn)
                 #print("jac", jacEval)
                 delta=np.linalg.solve(jacEval, y)
                 #print("delta", delta)
@@ -313,12 +332,12 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
                     #print(y)
                     break
             else:
-                return None, False
                 print("did not converge")
                 print("xn", xn)
                 print("delta", delta)
                 print("y",y)
                 print(sys.posToId)
+                return None, False
         solidsCalcDict[solidsPresentHash]=True
 
         removedSolid=False
@@ -333,7 +352,8 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
             for component in replaceDict:
                 if(component in constantReplaceDict):
                     continue
-                solidAmts.append(-baseEqns[component].eval(xn, sys.idToPos, replaceDict)) #get the ammount of solid missing from each component equation
+                baseEqns[component].updateReplacedTerms(replaceDict)
+                solidAmts.append(-baseEqns[component].eval(xn, sys.idToPos)) #get the ammount of solid missing from each component equation
                 solidCoeffs.append([solidCoeffDict[component][i] for i in solidsPresent]) #order the coeffecient data in solidsPresent order so that it can be retrieved in that order later
                 i+=1
             solidAmtResults=sorted([(amt, solidPresent) for amt, solidPresent in zip(np.linalg.solve(solidCoeffs, solidAmts), solidsPresent)]) #solve linear system, telling us exactly how much of the solid there is and sort the results so that we pick the most undersaturated first, so that we fix it first since we only do 1 solid at a time
@@ -361,7 +381,9 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
             gibbsRuleMatrix=[solidsTableau[i] for i in solidsPresent] #have the main part ready so that we dont recopy it every time
             addedSolid=False
             solidNeedsToForm=False
-            solubilityProductResult=sorted([(solidsHorizEqn.eval(xn, sys.idToPos, replaceDict), i) for i, solidsHorizEqn in enumerate(solidsHorizEqns) if i not in solidsPresent], reverse=True) #store the most oversaturated first so that we take care of it first since we only do 1 solid at a time
+            for solidsHorizEqn in solidsHorizEqns:
+                solidsHorizEqn.updateReplacedTerms(replaceDict)
+            solubilityProductResult=sorted([(solidsHorizEqn.eval(xn, sys.idToPos), i) for i, solidsHorizEqn in enumerate(solidsHorizEqns) if i not in solidsPresent], reverse=True) #store the most oversaturated first so that we take care of it first since we only do 1 solid at a time
             #print("solubility product result sorted",solubilityProductResult)
             for amt, i in solubilityProductResult:
                 if(amt>=1):
@@ -424,7 +446,8 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
                 else:
                     result={}
                     for horizontalEqn, verticalLabel in zip(horizontalEqns, verticalLabels):
-                        res=float(horizontalEqn.eval(xn, sys.idToPos, replaceDict))
+                        horizontalEqn.updateReplacedTerms(replaceDict)
+                        res=float(horizontalEqn.eval(xn, sys.idToPos))
                         if(verticalLabel[0]=="c" or verticalLabel[0]=="f"):
                             result[componentDict[int(verticalLabel[1:])].name]=res
                         else:
@@ -449,8 +472,8 @@ def solutionFromWholeTableau(tableau, alkEquation=[["c330", -1], ["s3301400", 1]
 
     return solutionFromPiecedTableau(strTableau, tableau[0][1:], strVerticalLabels, solidsTableau, solidsVerticalLabels, alkEquation, alk)
 
-cProfile.run(
-'''
+import timeit
+
 solutionFromWholeTableau(
 [
 ["","c140", "c330","c150"],
@@ -488,8 +511,6 @@ solutionFromWholeTableau([
 ["z5015002", "0"   , "1"   , "2"   , "1"],
 ["Total Concentrations", pow(10, -10.3), "5.0000e-3", "5.0000e-3", "5.0000e-3"]
 ])
-'''
-)
 '''
 solutionFromWholeTableau([["", "c330"],
 ["c330", "1"],
