@@ -276,7 +276,7 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
                 terms, factor, success=replaceDict[component].replace(preReplaceDict) #this peels away 1 layer, allowing us to simplify
                 replaceMade=replaceMade or success
                 if(success):
-                    #print("replaced")
+                    print("replaced")
                     newTerms=[]
                     adjustPower=1
                     for term in terms:
@@ -342,6 +342,7 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
 
         removedSolid=False
         solidNeedsToDisolve=False
+        solidAmtResults=[]
 
         if(len(solidsPresent)>0):
             #print(replaceDict)
@@ -471,7 +472,7 @@ def solutionFromWholeTableau(tableau, alkEquation=[["c330", -1], ["s3301400", 1]
             strVerticalLabels.append(row[0])
 
     return solutionFromPiecedTableau(strTableau, tableau[0][1:], strVerticalLabels, solidsTableau, solidsVerticalLabels, alkEquation, alk)
-
+'''
 import timeit
 
 solutionFromWholeTableau(
@@ -491,7 +492,7 @@ solutionFromWholeTableau(
 ["Total Concentrations", 1e-3, 0, 1e-3]
 ])
 solutionFromWholeTableau([
-[""        , "f330", "c460", "c140", "c150"],
+[""        , "c330", "c460", "c140", "c150"],
 ["c330"    , "1"   , "0"   , "0"   , "0"],
 ["c460"    , "0"   , "1"   , "0"   , "0"],
 ["c140"    , "0"   , "0"   , "1"   , "0"],
@@ -509,8 +510,9 @@ solutionFromWholeTableau([
 ["z5046002", "0"   , "1"   , "1"   , "0"],
 ["z5015001", "0"   , "0"   , "1"   , "1"],
 ["z5015002", "0"   , "1"   , "2"   , "1"],
-["Total Concentrations", pow(10, -10.3), "5.0000e-3", "5.0000e-3", "5.0000e-3"]
+["Total Concentrations", 1e-2, "5.0000e-3", "5.0000e-3", "5.0000e-3"]
 ])
+'''
 '''
 solutionFromWholeTableau([["", "c330"],
 ["c330", "1"],
