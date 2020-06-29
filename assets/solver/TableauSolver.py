@@ -53,15 +53,18 @@ def componentCSVStringToDatabase(componentCSVString):
         if(row[0]):
             componentDict[int(row[0])]=Component(row)
 
-
 try:
     componentCSVStringToDatabase(componentCSVString)
     speciesCSVStringToDatabase(speciesCSVString)
+    def print(*vargs):
+        pass
 except:
     with open("comp.vdb") as f:
         componentCSVStringToDatabase(f.read())
     with open("thermo0.vdb") as f:
         speciesCSVStringToDatabase(f.read())
+    import cProfile
+    import timeit
 
 
 class Term:
@@ -79,11 +82,10 @@ class Addend:
         self.factor=factor
 
     def replace(self, replaceDict):
-        replacedTerms=copy.deepcopy(self.terms)
         factor=self.factor
         thisRoundReplacedTurns=[]
         replacedAnything=False
-        for term in replacedTerms:
+        for term in self.terms:
             if(term.id in replaceDict):
                 replacedAnything=True
                 #print(factor, replaceDict[term.id].factor, term.power)
@@ -92,21 +94,23 @@ class Addend:
                     thisRoundReplacedTurns.append(Term(replacingTerms.id, replacingTerms.power*term.power))
             else:
                 thisRoundReplacedTurns.append(term)
-        replacedTerms=thisRoundReplacedTurns
+        if replacedAnything:
+            replacedTerms=thisRoundReplacedTurns
+            totalPowerDict={}
 
-        totalPowerDict={}
+            for term in replacedTerms:
+                if(not term.id in totalPowerDict):
+                    totalPowerDict[term.id]=term.power
+                else:
+                    totalPowerDict[term.id]+=term.power
+            replacedTerms=[]
+            for idPower in totalPowerDict:
+                if(totalPowerDict[idPower]!=0):
+                    replacedTerms.append(Term(idPower, totalPowerDict[idPower]))
 
-        for term in replacedTerms:
-            if(not term.id in totalPowerDict):
-                totalPowerDict[term.id]=term.power
-            else:
-                totalPowerDict[term.id]+=term.power
-        replacedTerms=[]
-        for idPower in totalPowerDict:
-            if(totalPowerDict[idPower]!=0):
-                replacedTerms.append(Term(idPower, totalPowerDict[idPower]))
-
-        return replacedTerms, factor, replacedAnything
+            return replacedTerms, factor, True
+        else:
+            return self.terms, self.factor, False
     def eval(self, x, idToPos, replaceDict):
         replacedTerms, result, _=self.replace(replaceDict)
         for term in replacedTerms:
@@ -236,7 +240,7 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
         terms=[]
         for j in range(len(horizontalLables)):
             if(tableau[i][j]!=0):
-                terms.append(Term(copy.copy(horizontalLables[j]), tableau[i][j])) #[component]^n
+                terms.append(Term(horizontalLables[j], tableau[i][j])) #[component]^n
         if(verticalLables[i][0]=="s"):
             #print(speciesDict[int(verticalLables[i][1:])].logK)
             #print(speciesDict[int(verticalLables[i][1:])].logK)
@@ -252,7 +256,7 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
         terms=[]
         for j in range(len(horizontalLables)):
             if(solidsTableau[i][j]!=0):
-                terms.append(Term(copy.copy(horizontalLables[j]), solidsTableau[i][j])) #[component]^n
+                terms.append(Term(horizontalLables[j], solidsTableau[i][j])) #[component]^n
         solidsHorizEqns.append(Eqn([Addend(pow(10, speciesDict[int(solidsVerticalLabels[i][1:])].logK), terms)], 0)) #K*[component]^n*[compoenent]^n
 
     solidCoeffDict={}
@@ -266,7 +270,7 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
         for j in range(len(horizontalLables)):
             for i in range(len(verticalLables)-1):
                 if(tableau[i][j]!=0):
-                    copyAddend=copy.deepcopy(horizontalEqns[i].addends[0])
+                    copyAddend=horizontalEqns[i].addends[0]
                     copyAddend.factor*=tableau[i][j]
                     verticalEqns[j].addends.append(copyAddend)
     else:
@@ -275,14 +279,14 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
             if(horizontalLables[j][0]!="a"):
                 for i in range(len(verticalLables)-1):
                     if(tableau[i][j]!=0):
-                        copyAddend=copy.deepcopy(horizontalEqns[i].addends[0])
+                        copyAddend=horizontalEqns[i].addends[0]
                         copyAddend.factor*=tableau[i][j]
                         verticalEqns[j].addends.append(copyAddend)
             else:
                 for i in range(len(verticalLables)-1):
                     for pair in alkEqn:
                         if(pair[0]==verticalLables[i]):
-                            copyAddend=copy.deepcopy(horizontalEqns[i].addends[0])
+                            copyAddend=horizontalEqns[i].addends[0]
                             copyAddend.factor*=pair[1]
                             #print(pair, verticalLables[i], copyAddend)
                             verticalEqns[j].addends.append(copyAddend)
@@ -336,7 +340,7 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
                     continue
                 eqn=currentEqnsSet[term.id]
                 subtrahendAppend=[]
-                for addend in copy.deepcopy(subtrahendEqn.addends):
+                for addend in subtrahendEqn.addends:
                     addend.factor*=term.power #shortcut to stochiometric coeffecient
                     subtrahendAppend.append(addend)
                 #print("current addends", eqn.addends)
@@ -580,55 +584,7 @@ solutionFromWholeTableau(
 ["Total Concentrations", 1e-3, 0, 1e-3]
 ])
 '''
-'''
-solutionFromWholeTableau(
-[
-["", "c330", "c150", "c140", "c460", "c100", "c732", "c580"],
-["c330", "1", "0", "0", "0", "0", "0", "0"],
-["s3300020", "-1", "0", "0", "0", "0", "0", "0"],
-["c150", "0", "1", "0", "0", "0", "0", "0"],
-["s1503300", "-1", "1", "0", "0", "0", "0", "0"],
-["z2015000", "-2", "1", "0", "0", "0", "0", "0"],
-["c140", "0", "0", "1", "0", "0", "0", "0"],
-["s3301400", "1", "0", "1", "0", "0", "0", "0"],
-["s3301401", "2", "0", "1", "0", "0", "0", "0"],
-["s1501400", "1", "1", "1", "0", "0", "0", "0"],
-["s1501401", "0", "1", "1", "0", "0", "0", "0"],
-["z5015001", "0", "1", "1", "0", "0", "0", "0"],
-["c460", "0", "0", "0", "1", "0", "0", "0"],
-["s4603300", "-1", "0", "0", "1", "0", "0", "0"],
-["s4601400", "0", "0", "1", "1", "0", "0", "0"],
-["s4601401", "1", "0", "1", "1", "0", "0", "0"],
-["s4601402", "0", "0", "1", "2", "0", "0", "0"],
-["z2046000", "-2", "0", "0", "1", "0", "0", "0"],
-["z5046002", "0", "0", "1", "1", "0", "0", "0"],
-["z5015002", "0", "1", "2", "1", "0", "0", "0"],
-["z5015003", "0", "1", "4", "3", "0", "0", "0"],
-["c100", "0", "0", "0", "0", "1", "0", "0"],
-["s1003300", "-1", "0", "0", "0", "1", "0", "0"],
-["s1001401", "0", "0", "1", "0", "1", "0", "0"],
-["s1001400", "1", "0", "1", "0", "1", "0", "0"],
-["c732", "0", "0", "0", "0", "0", "1", "0"],
-["s3307320", "1", "0", "0", "0", "0", "1", "0"],
-["s4607320", "0", "0", "0", "1", "0", "1", "0"],
-["s1507320", "0", "1", "0", "0", "0", "1", "0"],
-["s1007320", "0", "0", "0", "0", "1", "1", "0"],
-["z6010000", "0", "0", "0", "0", "1", "1", "0"],
-["c580", "0", "0", "0", "0", "0", "0", "1"],
-["s3305800", "1", "0", "0", "0", "0", "0", "1"],
-["s3305801", "2", "0", "0", "0", "0", "0", "1"],
-["s3305802", "3", "0", "0", "0", "0", "0", "1"],
-["s1005800", "1", "0", "0", "0", "1", "0", "1"],
-["s4605800", "0", "0", "0", "1", "0", "0", "1"],
-["s4605802", "1", "0", "0", "1", "0", "0", "1"],
-["s1505800", "1", "1", "0", "0", "0", "0", "1"],
-["s1505801", "0", "1", "0", "0", "0", "0", "1"],
-["s1505802", "2", "1", "0", "0", "0", "0", "1"],
-["z7015003", "-1", "5", "0", "0", "0", "0", "3"],
-["z7015005", "1", "1", "0", "0", "0", "0", "1"],
-["Total Concentrations", "2.0000e-4", "1.0000e-2", "1.0000e-3", "5.0000e-2", "1.0000e-4", "1.0000e-3", "1.0000e-4"]
-])
-'''
+
 '''
 solutionFromWholeTableau([
 [""        , "f330", "c460", "c140", "c150"],
@@ -648,15 +604,16 @@ solutionFromWholeTableau([
 ["s1501401", "0"   , "0"   , "1"   , "1"],
 ["z5046002", "0"   , "1"   , "1"   , "0"],
 ["z5015001", "0"   , "0"   , "1"   , "1"],
-["z5015002", "0"   , "1"   , "2"   , "1"], #dolomite
+["z5015002", "0"   , "1"   , "2"   , "1"],
 ["Total Concentrations", pow(10, -10.3), "5.0000e-3", "5.0000e-3", "5.0000e-3"]
 ])
+'''
 '''
 solutionFromWholeTableau([["", "c330"],
 ["c330", "1"],
 ["s3300020", "-1"],
 ["Total Concentrations", "0.0000e+0"]])
-
+'''
 
 #["z5015001", 1, 0, 1]
 #["2015000", 1, -2, 0]
