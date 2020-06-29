@@ -3,10 +3,8 @@ import copy
 import io
 import csv
 import itertools
-import math
-import bisect
 
-np.set_printoptions(precision=5)
+
 
 class Species:
     def __init__(self, line1, line2, line3):
@@ -223,11 +221,11 @@ class System:
         return evaluatedJacobian
 
 def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsTableau, solidsVerticalLabels,  alkEqn, alk):
-    print(tableau)
-    print(horizontalLables)
-    print(verticalLables)
-    print(solidsTableau)
-    print(solidsVerticalLabels)
+   #print(tableau)
+   #print(horizontalLables)
+   #print(verticalLables)
+   #print(solidsTableau)
+   #print(solidsVerticalLabels)
     assert verticalLables[-1]=="Total Concentrations", "your last row should be the total concentrations"
     horizontalEqns=[]
     constantReplaceDict={}
@@ -312,11 +310,11 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
 
     #printNoMatter(constantReplaceDict)
     while(True):
-        replaceDict=copy.deepcopy(constantReplaceDict)
+        replaceDict=copy.copy(constantReplaceDict)
         currentEqnsSet=copy.deepcopy(baseEqns)
         for i in solidsPresent:
             replacing=0
-            print(replaceDict)
+           #print(replaceDict)
             for j, term in enumerate(solidsHorizEqns[i].addends[0].terms):
                 #print(term)
                 if term.id in constantReplaceDict:
@@ -330,7 +328,7 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
                     continue
                 addend.terms.append(Term(term.id, -term.power/solidsHorizEqns[i].addends[0].terms[replacing].power))
             replaceDict[solidsHorizEqns[i].addends[0].terms[replacing].id]=addend
-            print(replaceDict)
+           #print(replaceDict)
             subtrahendEqn=baseEqns[solidsHorizEqns[i].addends[0].terms[replacing].id]
             #print(currentEqnsSet)
             for term in addend.terms:
@@ -346,16 +344,16 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
                 eqn.addends+=subtrahendAppend
                 eqn.constant-=subtrahendEqn.constant
             #print(currentEqnsSet)
-        print("replaceDict", replaceDict)
+       #print("replaceDict", replaceDict)
         replaceMade=True
-        preReplaceDict=copy.deepcopy(replaceDict)
+        preReplaceDict=copy.copy(replaceDict)
         while(replaceMade):
             replaceMade=False
             for component in replaceDict:
                 terms, factor, success=replaceDict[component].replace(preReplaceDict)
                 replaceMade=replaceMade or success
                 if(success):
-                    print("hhhhh")
+                    #print("hhhhh")
                     newTerms=[]
                     adjustPower=1
                     for term in terms:
@@ -367,22 +365,22 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
                     for term in newTerms:
                         term.power*=adjustPower
                     replaceDict[component]=Addend(factor, newTerms)
-        print("replaceDict", replaceDict)
+       #print("replaceDict", replaceDict)
 
         sys=System()
         for eqnid in currentEqnsSet:
             eqn=currentEqnsSet[eqnid]
             if(eqnid in replaceDict):
                 continue
-            sys.addEqn(copy.deepcopy(eqn), replaceDict)
-        print("eqns", sys.eqns)
+            sys.addEqn(eqn, replaceDict)
+       #print("eqns", sys.eqns)
         if(len(sys.eqns)>0):
             sys.calcJacobian(replaceDict)
 
             #print("jacs", sys.jacobianeqns)
             converged=False
 
-            print(sys.idToPos)
+           #print(sys.idToPos)
             #xn=np.array([[pow(10, -9.91)], [pow(10, -3.91)]]+[[1e-7] for i in range(2, len(sys.eqns))])
             xn=np.full((len(sys.eqns), 1), 1e-5)
             #print(xn)
@@ -418,52 +416,53 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
                     #print(sys.eval([pow(10, -3.16), pow(10, -3.36), pow(10, -10.41)], replaceDict))
                     break
             else:
-                print("did not converge")
-                print(delta)
-                print(sys.eval(xn, replaceDict))
-                print(xn)
-                print(sys.posToId)
+                pass
+               #print("did not converge")
+               #print(delta)
+               #print(sys.eval(xn, replaceDict))
+               #print(xn)
+               #print(sys.posToId)
 
-        print("PRESENT",solidsPresentHash)
+       #print("PRESENT",solidsPresentHash)
         solidsCalcDict[solidsPresentHash]=True
 
         solidAmtEqnDict={}
-        print(replaceDict)
-        print(constantReplaceDict)
+       #print(replaceDict)
+       #print(constantReplaceDict)
         for component in replaceDict:
             if(component in constantReplaceDict):
                 continue
-            print(component)
+           #print(component)
             solidAmtEqnDict[component]=[solidCoeffDict[component][i] for i in solidsPresent]
         solidCoeffs=np.zeros((len(solidsPresent), len(solidsPresent)))
         solidAmts=np.zeros((len(solidsPresent), 1))
         for i, component in enumerate(solidAmtEqnDict):
-            print(baseEqns[component])
+           #print(baseEqns[component])
             solidAmts[i]=-baseEqns[component].eval(xn, sys.idToPos, replaceDict)[0]
             for j in range(len(solidsPresent)):
                 solidCoeffs[i][j]=solidAmtEqnDict[component][j]
-        print(solidsVerticalLabels)
-        print(solidsPresent)
-        print(solidAmtEqnDict)
-        print(solidCoeffs)
-        print(solidAmts)
+       #print(solidsVerticalLabels)
+       #print(solidsPresent)
+       #print(solidAmtEqnDict)
+       #print(solidCoeffs)
+       #print(solidAmts)
         solidAmtResults=np.linalg.solve(solidCoeffs, solidAmts)
         solidAmtResults=sorted([(a, solidsPresent[i]) for i, a in enumerate(solidAmtResults)])
-        print("solids could disolve sorted:", solidAmtResults)
+       #print("solids could disolve sorted:", solidAmtResults)
         removedSolid=False
         solidNeedsToDisolve=False
         for amt, i in solidAmtResults:
             if(amt<0):
                 newHash=solidsPresentHash^(1<<i)
-                print(newHash)
-                print(solidsCalcDict)
+               #print(newHash)
+               #print(solidsCalcDict)
                 if(newHash in solidsCalcDict):
                     if(not solidNeedsToDisolve):
                         solidNeedsToDisolve=(True, i)
-                    print("stopped loop1")
+                   #print("stopped loop1")
                     continue
                 else:
-                    print("removing solid", speciesDict[int(solidsVerticalLabels[i][1:])].name)
+                   #print("removing solid", speciesDict[int(solidsVerticalLabels[i][1:])].name)
                     solidsPresent.remove(i)
                     solidsPresentHash=newHash
                     removedSolid=True
@@ -474,27 +473,27 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
             gibbsRuleMatrix=[solidsTableau[i] for i in solidsPresent]
             addedSolid=False
             solidNeedsToForm=False
-            solubilityProductResult=sorted([(solidsHorizEqns[i].eval(xn, sys.idToPos, replaceDict)[0], i) for i in range(len(solidsVerticalLabels)) if not i in solidsPresent], reverse=True)
-            print("solubility product result sorted",solubilityProductResult)
+            solubilityProductResult=sorted([(solidsHorizEqns[i].eval(xn, sys.idToPos, replaceDict)[0], i) for i in range(len(solidsVerticalLabels)) if not i in solidsPresent], reverse=False)
+           #print("solubility product result sorted",solubilityProductResult)
             for amt, i in solubilityProductResult:
-                print(solidsHorizEqns[i])
-                print("SOLIDS",solidsHorizEqns[i].eval(xn, sys.idToPos, replaceDict)[0])
+               #print(solidsHorizEqns[i])
+               #print("SOLIDS",solidsHorizEqns[i].eval(xn, sys.idToPos, replaceDict)[0])
                 if(amt>=1):
                     newHash=solidsPresentHash^(1<<i)
-                    print(newHash)
-                    print(solidsCalcDict)
-                    print(solidsHorizEqns)
+                   #print(newHash)
+                   #print(solidsCalcDict)
+                   #print(solidsHorizEqns)
                     tempGibbsRuleMatrix=copy.copy(gibbsRuleMatrix)
                     tempGibbsRuleMatrix.append(solidsTableau[i])
                     tempGibbsRuleMatrix=np.array(tempGibbsRuleMatrix)
                     if(newHash in solidsCalcDict or np.linalg.matrix_rank(tempGibbsRuleMatrix)<len(tempGibbsRuleMatrix)):
-                        solidNeedsToForm=True
-                        print()
-                        print("stopped loop2")
+                        solidNeedsToForm=(True, i)
+                       #print()
+                       #print("stopped loop2")
                         continue
                     else:
                         addedSolid=True
-                        print("adding solid", speciesDict[int(solidsVerticalLabels[i][1:])].name)
+                       #print("adding solid", speciesDict[int(solidsVerticalLabels[i][1:])].name)
                         solidsPresent.append(i)
                         solidsPresentHash=newHash
                         break;
@@ -504,7 +503,7 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
                 #print(xn)
                 #print(systemSolution)
                 if(solidNeedsToDisolve):
-                    print("ASFAFD")
+                   #print("We got cornered backtracking")
                     gibbsRuleMatrixCopyCopy=[solidsTableau[i] for i in solidsPresent if not i == solidNeedsToDisolve[1]]
                     for (amt, i) in solubilityProductResult:
                         tempGibbsRuleMatrix=copy.copy(gibbsRuleMatrixCopyCopy)
@@ -512,8 +511,8 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
                         tempGibbsRuleMatrix=np.array(tempGibbsRuleMatrix)
                         newHash=(solidsPresentHash^(1<<i))^(1<<solidNeedsToDisolve[1])
                         if(not newHash in solidsCalcDict and np.linalg.matrix_rank(tempGibbsRuleMatrix)==len(tempGibbsRuleMatrix)):
-                            print("adding solid", speciesDict[int(solidsVerticalLabels[i][1:])].name)
-                            print("removing solid", speciesDict[int(solidsVerticalLabels[solidNeedsToDisolve[1]][1:])].name)
+                           #print("adding solid", speciesDict[int(solidsVerticalLabels[i][1:])].name)
+                           #print("removing solid", speciesDict[int(solidsVerticalLabels[solidNeedsToDisolve[1]][1:])].name)
                             solidsPresent.remove(solidNeedsToDisolve[1])
                             solidsPresent.append(i)
                             solidsPresentHash=newHash
@@ -521,9 +520,9 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
                     else:
                         return
                 elif(solidNeedsToForm):
-                    print("ASFAFD")
+                   #print("We got cornered backtracking")
                     for (amt, i) in solubilityProductResult:
-                        gibbsRuleMatrixCopyCopy=[solidsTableau[j] for j in solidsPresent if not j == solidNeedsToDisolve[i]]
+                        gibbsRuleMatrixCopyCopy=[solidsTableau[j] for j in solidsPresent if not j == solidNeedsToForm[1]]
                         tempGibbsRuleMatrix=copy.copy(gibbsRuleMatrixCopyCopy)
                         tempGibbsRuleMatrix.append(solidsTableau[i])
                         tempGibbsRuleMatrix=np.array(tempGibbsRuleMatrix)
@@ -537,17 +536,16 @@ def solutionFromPiecedTableau(tableau, horizontalLables, verticalLables, solidsT
                     #print("horiz", horizontalEqns)
                     for i in range(len(verticalLables)-1):
                         res, _=horizontalEqns[i].eval(xn, sys.idToPos, replaceDict)
-                        print(res)
+                       #print(res)
                         if(verticalLables[i][0]=="c" or verticalLables[i][0]=="f"):
-                            #result[componentDict[int(verticalLables[i][1:])].name]=-math.log10(res)
                             result[componentDict[int(verticalLables[i][1:])].name]=float(res)
                         else:
                             result[speciesDict[int(verticalLables[i][1:])].name]=float(res)
                     for i in solidsPresent:
                         result[speciesDict[int(solidsVerticalLabels[i][1:])].name]=1
-                    print(result)
+                    #print(result)
                     return result, converged
-    print("outa here")
+   #print("outa here")
 
 def solutionFromWholeTableau(tableau, alkEquation=[["c330", -1], ["s3301400", 1], ["c140", 2], ["s3300020", 1], ["s3305800", 1], ["c580", 2], ["s3307700", 1], ["s3307701", 2], ["s3300900", 1], ["s303302", 1], ["s3305802", -1]], alk=None):
     strTableau=[]
