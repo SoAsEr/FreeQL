@@ -34,25 +34,11 @@ class Component:
         self.DebeyeHuckelB=float(line[4])
         molWeight=float(line[5])
 
-componentDict={}
-speciesDict={}
-
 def grouper(n, iterable, fillvalue=None):
   args = [iter(iterable)] * n
   return itertools.zip_longest(fillvalue=fillvalue, *args)
 
-def speciesCSVStringToDatabase(speciesCSVString):
-    for rowGroup in grouper(3, csv.reader(io.StringIO(speciesCSVString))):
-        if(rowGroup[0][0]==0 or rowGroup[1][0]==0 or rowGroup[2][0]==0):
-            continue
-        #print(rowGroup[0][0])
-        speciesDict[int(rowGroup[0][0])]=Species(rowGroup[0], rowGroup[1], rowGroup[2])
-
-def componentCSVStringToDatabase(componentCSVString):
-    for row in csv.reader(io.StringIO(componentCSVString)):
-        if(row[0]):
-            componentDict[int(row[0])]=Component(row)
-
+'''
 try:
     componentCSVStringToDatabase(componentCSVString)
     speciesCSVStringToDatabase(speciesCSVString)
@@ -61,7 +47,7 @@ except:
         componentCSVStringToDatabase(f.read())
     with open("thermo0.vdb") as f:
         speciesCSVStringToDatabase(f.read())
-
+'''
 
 class Term:
     def __init__(self, id, power):
@@ -205,7 +191,7 @@ class System:
             for eqn in row:
                 eqn.updateReplacedTerms(replaceDict)
 
-def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsTableau, solidsVerticalLabels,  alkEqn, alk):
+def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsTableau, solidsVerticalLabels,  alkEqn, alk, componentDict, speciesDict):
     #assert verticalLabels[-1]=="Total Concentrations", "your last row should be the total concentrations"
     constantReplaceDict={horizontalLabel : Addend(total,[]) for total, horizontalLabel in zip(tableau[-1], horizontalLabels) if horizontalLabel[0]=="f"}
 
@@ -276,7 +262,7 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
                 terms, factor, success=replaceDict[component].replace(preReplaceDict) #this peels away 1 layer, allowing us to simplify
                 replaceMade=replaceMade or success
                 if(success):
-                    print("replaced")
+                    #print("replaced")
                     newTerms=[]
                     adjustPower=1
                     for term in terms:
@@ -455,10 +441,26 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
                             result[speciesDict[int(verticalLabel[1:])].name]=res
                     for amt, i in solidAmtResults:
                         result[speciesDict[int(solidsVerticalLabels[i][1:])].name]=float(amt)
-                    print(result)
+                    #print(result)
                     return result, True
 
-def solutionFromWholeTableau(tableau, alkEquation=[["c330", -1], ["s3301400", 1], ["c140", 2], ["s3300020", 1], ["s3305800", 1], ["c580", 2], ["s3307700", 1], ["s3307701", 2], ["s3300900", 1], ["s303302", 1], ["s3305802", -1]], alk=None):
+def speciesCSVStringToDatabase(speciesCSVString):
+    speciesDict={}
+    for rowGroup in grouper(3, csv.reader(io.StringIO(speciesCSVString))):
+        if(rowGroup[0][0]==0 or rowGroup[1][0]==0 or rowGroup[2][0]==0):
+            continue
+        #print(rowGroup[0][0])
+        speciesDict[int(rowGroup[0][0])]=Species(rowGroup[0], rowGroup[1], rowGroup[2])
+    return speciesDict
+
+def componentCSVStringToDatabase(componentCSVString):
+    componentDict={}
+    for row in csv.reader(io.StringIO(componentCSVString)):
+        if(row[0]):
+            componentDict[int(row[0])]=Component(row)
+    return componentDict
+
+def solutionFromWholeTableau(tableau, componentCSVString, speciesCSVString, alkEquation=[["c330", -1], ["s3301400", 1], ["c140", 2], ["s3300020", 1], ["s3305800", 1], ["c580", 2], ["s3307700", 1], ["s3307701", 2], ["s3300900", 1], ["s303302", 1], ["s3305802", -1]], alk=None):
     strTableau=[]
     strVerticalLabels=[]
     solidsTableau=[]
@@ -471,7 +473,7 @@ def solutionFromWholeTableau(tableau, alkEquation=[["c330", -1], ["s3301400", 1]
             strTableau.append([float(element) for element in row[1:]])
             strVerticalLabels.append(row[0])
 
-    return solutionFromPiecedTableau(strTableau, tableau[0][1:], strVerticalLabels, solidsTableau, solidsVerticalLabels, alkEquation, alk)
+    return solutionFromPiecedTableau(strTableau, tableau[0][1:], strVerticalLabels, solidsTableau, solidsVerticalLabels, alkEquation, alk, componentCSVStringToDatabase(componentCSVString), speciesCSVStringToDatabase(speciesCSVString))
 '''
 import timeit
 

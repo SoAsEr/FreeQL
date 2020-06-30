@@ -14,8 +14,6 @@ async function prepareTableauObjects(){
       return response.text();
     })
   ]);
-  pyodide.runPython("speciesCSVString='''"+speciesCSVString+"'''");
-  pyodide.runPython("componentCSVString='''"+componentCSVString+"'''");
   pyodide.runPython(setupCode);
 }
 

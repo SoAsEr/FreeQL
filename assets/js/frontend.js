@@ -8,6 +8,7 @@ var componentsMap=new Map();
 var speciesMap=new Map();
 var solidsMap=new Map();
 var gasesMap=new Map();
+var editedLogKMap=new Map();
 
 //https://stackoverflow.com/questions/3954438/how-to-remove-item-from-array-by-value
 Array.prototype.remove = function() {
@@ -379,13 +380,30 @@ async function calculate(){
     });
     args+="],";
   });
-  args+="]";
+  args+="], '''";
+  tableau.forEach((row) => {
+    if(row[0][0]=="c"){
+      args+=componentsMap.get(row[0].substr(1))[2]
+    }
+  });
+  args+="''','''"
+  tableau.forEach((row) => {
+    if(row[0][0]=="s" || row[0][0]=="z"){
+      var nth=0;
+      args+=speciesMap.get(row[0].substr(1))[5].replace(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g, function (match, i, original) {
+          nth++;
+          return (nth === 4 && editedLogKMap.has(row[0].substr(1))) ? ","+editedLogKMap.get(row[0].substr(1)) : match;
+      });
+    }
+  });
+  args+="'''"
   if($("#hplus-select").val()=="Alkalinity"){
     args+=",alk="+$("#hplus-input").val()
   } else if($("#hplus-select").val()=="Other Alkalinity"){
     args+=",alk="+$("#hplus-input").val()
     args+=", alkEquation="+customAlkalinityEqn();
   }
+  console.log(args)
   $("#result-modal").modal({
     keyboard: false,
     backdrop: "static",
@@ -851,17 +869,18 @@ var csvStringPromises  = Promise.all([
   }),
 ]);
 
+
 async function prepareDocument(){
   let [componentsCSVString, speciesCSVString, solidsCSVString, gasesCSVString] = await csvStringPromises;
   componentsCSVString.trim().split("\n").filter((item) => {return !item.match(/^0,/m);}).forEach((item) => {
     var match=Array.from(item.matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
-    componentsMap.set(match[0][1], [match[1][1], match[5][1]]);
+    componentsMap.set(match[0][1], [match[1][1], match[5][1], item]);
   });
   Array.from(speciesCSVString.trim().matchAll(/(.+?)\r?\n(.+?)\r?\n(.+?)\r?\n/g)).filter((item) => {return !item[0].match(/^0,/m);}).forEach((item) => {
     var line1=Array.from(item[1].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
     var line2=Array.from(item[2].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
     var line3=Array.from(item[3].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
-    speciesMap.set(line1[0][1], [line1[1][1], line3[0][1], line2.filter((item, i) => {return i%2==0;}).map((item) => {return item[1]}),line2.filter((item, i) => {return i%2==1;}).map((item) => {return item[1]}), line1[3][1]]);
+    speciesMap.set(line1[0][1], [line1[1][1], line3[0][1], line2.filter((item, i) => {return i%2==0;}).map((item) => {return item[1]}),line2.filter((item, i) => {return i%2==1;}).map((item) => {return item[1]}), line1[3][1], item[0]]);
   });
   Array.from(gasesCSVString.trim().matchAll(/(.+?)\r?\n(.+?)\r?\n(.+?)\r?\n/g)).filter((item) => {return !item[0].match(/^0,/m);}).forEach((item) => {
     var line1=Array.from(item[1].matchAll(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g));
@@ -875,7 +894,7 @@ async function prepareDocument(){
   });
   //console.log(solidsMap)
   //console.log(gasesMap)
-  //console.log(componentsMap)
+  console.log(componentsMap)
   console.log(speciesMap)
   if(documentReady){
     onReady();
