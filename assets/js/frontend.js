@@ -432,7 +432,8 @@ function waitForVisible(element, callback) {
 };
 
 function showTableau(){
-  var readableTableau=toReadableTableau(createTableau());
+  var rawTableau=createTableau();
+  var readableTableau=toReadableTableau(rawTableau);
 
   var tableauElement = $("#view-tableau-modal").find(".tableau");
   var fitModal=tableauElement.closest(".fit-modal");
@@ -450,22 +451,36 @@ function showTableau(){
     }
     trthead.append(toAppend);
   });
+
+  var editSvg=`<svg class='logK-editor' style='float:right;margin-top:0.2rem' width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-pencil" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path fill-rule="evenodd" d="M11.293 1.293a1 1 0 0 1 1.414 0l2 2a1 1 0 0 1 0 1.414l-9 9a1 1 0 0 1-.39.242l-3 1a1 1 0 0 1-1.266-1.265l1-3a1 1 0 0 1 .242-.391l9-9zM12 2l2 2-9 9-3 1 1-3 9-9z"/>
+    <path fill-rule="evenodd" d="M12.146 6.354l-2.5-2.5.708-.708 2.5 2.5-.707.708zM3 10v.5a.5.5 0 0 0 .5.5H4v.5a.5.5 0 0 0 .5.5H5v.5a.5.5 0 0 0 .5.5H6v-1.5a.5.5 0 0 0-.5-.5H5v-.5a.5.5 0 0 0-.5-.5H3z"/>
+  </svg>`
+  var resetSvg=`<svg class='logK-reset' style='float:right;margin-top:0.26rem' width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-counterclockwise" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path fill-rule="evenodd" d="M12.83 6.706a5 5 0 0 0-7.103-3.16.5.5 0 1 1-.454-.892A6 6 0 1 1 2.545 5.5a.5.5 0 1 1 .91.417 5 5 0 1 0 9.375.789z"/>
+    <path fill-rule="evenodd" d="M7.854.146a.5.5 0 0 0-.708 0l-2.5 2.5a.5.5 0 0 0 0 .708l2.5 2.5a.5.5 0 1 0 .708-.708L5.707 3 7.854.854a.5.5 0 0 0 0-.708z"/>
+  </svg>`
+
   tableauElement.append(thead);
   var tbody=$("<tbody></tbody>");
   readableTableau.forEach( (itemi, indexi) => {
     if(indexi==0){
       return;
     }
-    var tr=$("<tr></tr>");
+    var tr=$("<tr data-species="+rawTableau[indexi][0]+"></tr>");
     if(indexi==1){
       tr.addClass("top");
     }
     itemi.forEach( (itemj, indexj) => {
       var toAppend=""
       if(indexj==0){
-        toAppend=$("<th scope='row'>"+chemTextReplace(itemj)+"</th>");
+        toAppend=$("<th scope='row' style='vertical-align:middle;'>"+chemTextReplace(itemj)+"</th>");
+      } else if(indexj==itemi.length-1 && indexi!=readableTableau.length-1 && rawTableau[indexi][0][0]!="c"){
+        var hasBeenEdited=editedLogKMap.has(rawTableau[indexi][0].substr(1));
+        var logKValue=hasBeenEdited ? editedLogKMap.get(rawTableau[indexi][0].substr(1)) : itemj;
+        toAppend="<td><div class='d-flex'><div class='centering-div'></div><span class='mx-1'>"+Number(logKValue).toFixed(2)+"</span><div class='centering-div'>"+(hasBeenEdited ? resetSvg : editSvg)+"</div></div></td>"
       } else {
-        toAppend=$("<td>"+itemj+"</td>");
+        toAppend=$("<td  style='vertical-align:middle;'>"+itemj+"</td>");
       }
       if(indexj==1 && indexi==1){
         toAppend.addClass("left");
@@ -474,6 +489,38 @@ function showTableau(){
     });
     tbody.append(tr);
   });
+  var resetFunction=function(e){
+    var species=$(e.target).closest("tr").attr("data-species").substr(1);
+    editedLogKMap.delete(species);
+    var editLocation=$(e.target).closest("td").children().first();
+    editLocation.empty();
+    editLocation.append("<div class='centering-div'></div><span class='mx-1'>"+Number(speciesMap.get(species)[4]).toFixed(2)+"</span><div class='centering-div'>"+editSvg+"</div>");
+    editLocation.find(".logK-editor").click(logKEditorFunction);
+  }
+  var logKEditorFunction=function(e){
+    var editLocation=$(e.target).closest("td").children().first();
+    editLocation.empty();
+    var editBox=$('<input type="number" class="mb-0 text-center form-control">');
+    editBox.keydown(function(e){
+      if(e.keyCode==13){
+        $(this).blur();
+      }
+    })
+    editBox.blur(function(e){
+      if($(e.target).val()){
+        editedLogKMap.set($(e.target).closest("tr").attr("data-species").substr(1), $(e.target).val());
+        $(e.target).parent().append("<div class='centering-div'></div><span class='mx-1'>"+Number($(e.target).val()).toFixed(2)+"</span><div class='centering-div'>"+resetSvg+"</div>");
+        $(e.target).parent().find(".logK-reset").click(resetFunction);
+      } else {
+        resetFunction(e);
+      }
+      $(e.target).remove();
+    });
+    editLocation.append(editBox);
+    editBox.focus();
+  }
+  tbody.find(".logK-editor").click(logKEditorFunction);
+  tbody.find(".logK-reset").click(resetFunction);
   tableauElement.append(tbody);
   waitForVisible(tableauElement, function(){
     var topLeft=tableauElement.find(".top-left");
