@@ -143,7 +143,12 @@ function addSpecies(toAddVal){
     if(species[3].every(function(val) {
       return currentComponents.indexOf(val) !== -1;
     }) && species[3].indexOf(toAddVal)!=-1){
-      $("#species-list").append("<li class='list-group-item' data-species='s"+id+"'><div class='d-flex justify-content-center'><div class='centering-div'></div><div class='species-label'>"+chemTextReplace(species[0])+"</div><div class='centering-div form-check-container'><div class='form-check form-check-inline'><input type='checkbox' class='form-check-input species-check' checked></div></div></div></li>");
+      var speciesToAdd=$("<li class='list-group-item' data-species='s"+id+"'><div class='d-flex justify-content-center'><div class='centering-div'></div><div class='species-label'>"+chemTextReplace(species[0])+"</div><div class='centering-div form-check-container'><div class='form-check form-check-inline'><input type='checkbox' class='form-check-input species-check' checked></div></div></div></li>")
+      if(solidsMap.has(id)){
+        speciesToAdd.addClass("disabled")
+        speciesToAdd.find(".species-check").prop("checked", false)
+      }
+      $("#species-list").append(speciesToAdd);
     }
   });
   $("#species-list").children().each(function(){
@@ -158,8 +163,6 @@ function addSpecies(toAddVal){
   });
   $("#species-list").children().each(function(){
     if($(this).attr("data-species")[0]=="s" && solidsMap.has($(this).attr("data-species").substr(1))){
-      $(this).find(".species-check").prop("checked", false);
-      $(this).addClass("disabled");
       $(this).appendTo($("#species-list"));
     }
   });
@@ -286,9 +289,6 @@ function toReadableTableau(tableau){
     if(row[0][0]=="c"){
       return row.concat(["0"]);
     }
-    if(row[0][0]=="z"){
-      return row.concat([-speciesMap.get(row[0].substr(1))[4]]);
-    }
     return row.concat([speciesMap.get(row[0].substr(1))[4]]);
   });
   console.log(tableau)
@@ -327,7 +327,6 @@ function handleResultEvent(e){
   $("#result-modal").attr("data-progress", "2");
   $("#result-loading").hide();
   if(e.data[1][1]){
-    console.log(e.data[1][0])
     $("#result-modal .download-button").each(function(){
       $(this).prop("disabled", false);
     });
@@ -537,10 +536,11 @@ function showTableau(){
 
 function onSpeciesCheckClick(element){
   if(element.checked){
-    $(element).closest(".list-group-item").removeClass("disabled");
     var actualElement=$(element).closest(".list-group-item");
-    var speciesValue=$(actualElement).attr("data-species").substr(1);
-    if($(actualElement).attr("data-species")[0]=="s" && solidsMap.has(speciesValue)){
+    actualElement.removeClass("disabled");
+    var completeSpeciesValue=$(actualElement).attr("data-species");
+    var speciesValue=completeSpeciesValue.substr(1);
+    if(completeSpeciesValue[0]=="s" && solidsMap.has(speciesValue)){
       var speciesList=speciesMap.get(speciesValue)[3]
       solidsMap.forEach((value, key) => {
         if(key!=speciesValue && speciesArraysEqual(speciesMap.get(key)[3], speciesList)){
@@ -548,17 +548,24 @@ function onSpeciesCheckClick(element){
           $("#species-list").children("[data-species='s"+key+"']").find(".species-check").prop("disabled", true)
         }
       });
+      if($("#hplus-select").val()=="Alkalinity" || $("#hplus-select").val()=="Other Alkalinity"){
+        actualElement.css("background", "#FFC107")
+      }
     }
   } else {
     var actualElement=$(element).closest(".list-group-item");
     $(actualElement).addClass("disabled");
-    var speciesValue=$(actualElement).attr("data-species").substr(1);
-    if($(actualElement).attr("data-species")[0]=="s" && solidsMap.has(speciesValue)){
+    var completeSpeciesValue=$(actualElement).attr("data-species");
+    var speciesValue=completeSpeciesValue.substr(1);
+    if(completeSpeciesValue[0]=="s" && solidsMap.has(speciesValue)){
       var speciesList=speciesMap.get(speciesValue)[3]
       solidsMap.forEach((value, key) => {
         if(key!=speciesValue && speciesArraysEqual(speciesMap.get(key)[3], speciesList)){
           //console.log("[data-species='s"+key+"']")
           $("#species-list").children("[data-species='s"+key+"']").find(".species-check").prop("disabled", false)
+        }
+        if($("#hplus-select").val()=="Alkalinity" || $("#hplus-select").val()=="Other Alkalinity"){
+          actualElement.css("background", "")
         }
       });
     }
@@ -835,6 +842,15 @@ function onReady(){
       $("#hplus-fixed").prop("checked", true);
     } else {
       $("#hplus-fixed").prop("checked", false);
+    }
+    if($("#hplus-select").val() =="Alkalinity" || $("#hplus-select").val()=="Other Alkalinity"){
+      $("#species-list").children("[data-species^=s]").each(function(){
+        if($(this).find("input:checkbox:checked").length && solidsMap.has($(this).attr("data-species").substr(1))){
+          $(this).css("background", "#FFC107");
+        }
+      })
+    } else {
+      $("#species-list").children().css("background", "")
     }
   });
   $(function() {

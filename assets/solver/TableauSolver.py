@@ -3,7 +3,7 @@ import copy
 import io
 import csv
 import itertools
-import cProfile
+import math
 
 
 class Species:
@@ -37,17 +37,6 @@ class Component:
 def grouper(n, iterable, fillvalue=None):
   args = [iter(iterable)] * n
   return itertools.zip_longest(fillvalue=fillvalue, *args)
-
-'''
-try:
-    componentCSVStringToDatabase(componentCSVString)
-    speciesCSVStringToDatabase(speciesCSVString)
-except:
-    with open("comp.vdb") as f:
-        componentCSVStringToDatabase(f.read())
-    with open("thermo0.vdb") as f:
-        speciesCSVStringToDatabase(f.read())
-'''
 
 class Term:
     def __init__(self, id, power):
@@ -207,6 +196,8 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
     #print("horiz", horizontalEqns)
     solidCoeffDict={horizontalLabel : solidsTableauColumn for solidsTableauColumn, horizontalLabel in zip(zip(*solidsTableau), horizontalLabels)}
 
+    solidsPresent=[]
+
     if(not alk is None):
         alkalinityAddends=[]
         for pair in alkEqn:
@@ -215,13 +206,15 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
                 currentAddend=horizontalEqns[i].addends[0]
                 #print(pair, verticalLabels[i], copyAddend)
                 alkalinityAddends.append(Addend(currentAddend.factor*pair[1], currentAddend.terms))
+        #enforce the solids present if you enter alkalinity
+        solidsPresent=[i for i in range(len(solidsHorizEqns))]
 
 
-    verticalEqns=[Eqn([Addend(horizontalEqn.addends[0].factor*tableauValue, horizontalEqn.addends[0].terms) for tableauValue, horizontalEqn in zip(tableauColumn, horizontalEqns) if tableauValue!=0], -tableauColumn[-1], id=horizontalLabel) if horizontalLabel[0]!="a" else Eqn(alkalinityAddends, -alk, id="Alk") for tableauColumn, horizontalLabel in zip(zip(*tableau), horizontalLabels)]
+
+    verticalEqns=[Eqn([Addend(horizontalEqn.addends[0].factor*tableauValue, horizontalEqn.addends[0].terms) for tableauValue, horizontalEqn in zip(tableauColumn, horizontalEqns) if tableauValue!=0], -tableauColumn[-1], id=horizontalLabel) if horizontalLabel!="a330" else Eqn(alkalinityAddends, -alk, id="a330") for tableauColumn, horizontalLabel in zip(zip(*tableau), horizontalLabels)]
 
     solidsPresentHash=0
     solidsCalcDict={}
-    solidsPresent=[]
     solidsCorrect=False
 
     baseEqns={verticalEqn.id : verticalEqn for verticalEqn in verticalEqns if verticalEqn.id[0]!="f"}
@@ -234,7 +227,7 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
         for i in solidsPresent:
             replacingTerm=None
             for term in solidsHorizEqns[i].addends[0].terms:
-                if term.id in constantReplaceDict:
+                if term.id in constantReplaceDict or term.id=="a330": #don't add solids for a filtered sample of alkalinity
                     continue
                 if term.id not in replaceDict:
                     replacingTerm=term
@@ -244,7 +237,7 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
             subtrahendEqn=baseEqns[replacingTerm.id]
             for term in addend.terms:
                 #print(subtrahendEqn)
-                if(term.id in constantReplaceDict):
+                if(term.id in constantReplaceDict or term.id=="a330"): #don't add solids for a filtered sample of alkalinity
                     continue
                 eqn=currentEqnsSet[term.id]
                 for addend in subtrahendEqn.addends:
@@ -281,8 +274,8 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
             if(eqnid in replaceDict):
                 continue
             sys.addEqn(eqn)
+        print(currentEqnsSet)
 
-        #print("eqns", sys.eqns)
         if(len(sys.eqns)>0):
             sys.updateReplacedTerms(replaceDict)
             sys.calcJacobian(replaceDict)
@@ -339,13 +332,14 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
             for component in replaceDict:
                 if(component in constantReplaceDict):
                     continue
+                print(baseEqns[component])
                 baseEqns[component].updateReplacedTerms(replaceDict)
                 solidAmts.append(-baseEqns[component].eval(xn, sys.idToPos)) #get the ammount of solid missing from each component equation
                 solidCoeffs.append([solidCoeffDict[component][i] for i in solidsPresent]) #order the coeffecient data in solidsPresent order so that it can be retrieved in that order later
                 i+=1
             solidAmtResults=sorted([(amt, solidPresent) for amt, solidPresent in zip(np.linalg.solve(solidCoeffs, solidAmts), solidsPresent)]) #solve linear system, telling us exactly how much of the solid there is and sort the results so that we pick the most undersaturated first, so that we fix it first since we only do 1 solid at a time
             #print(solidAmtResults)
-            #print("solids could disolve sorted:", solidAmtResults)
+            print("solids could disolve sorted:", solidAmtResults)
 
             for amt, i in solidAmtResults:
                 if(amt<0):
@@ -371,7 +365,7 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
             for solidsHorizEqn in solidsHorizEqns:
                 solidsHorizEqn.updateReplacedTerms(replaceDict)
             solubilityProductResult=sorted([(solidsHorizEqn.eval(xn, sys.idToPos), i) for i, solidsHorizEqn in enumerate(solidsHorizEqns) if i not in solidsPresent], reverse=True) #store the most oversaturated first so that we take care of it first since we only do 1 solid at a time
-            #print("solubility product result sorted",solubilityProductResult)
+            print("solubility product result sorted",solubilityProductResult)
             for amt, i in solubilityProductResult:
                 if(amt>=1):
                     newHash=solidsPresentHash^(1<<i)
@@ -441,7 +435,7 @@ def solutionFromPiecedTableau(tableau, horizontalLabels, verticalLabels, solidsT
                             result[speciesDict[int(verticalLabel[1:])].name]=res
                     for amt, i in solidAmtResults:
                         result[speciesDict[int(solidsVerticalLabels[i][1:])].name]=float(amt)
-                    #print(result)
+                    print(result)
                     return result, True
 
 def speciesCSVStringToDatabase(speciesCSVString):
@@ -474,6 +468,30 @@ def solutionFromWholeTableau(tableau, componentCSVString, speciesCSVString, alkE
             strVerticalLabels.append(row[0])
 
     return solutionFromPiecedTableau(strTableau, tableau[0][1:], strVerticalLabels, solidsTableau, solidsVerticalLabels, alkEquation, alk, componentCSVStringToDatabase(componentCSVString), speciesCSVStringToDatabase(speciesCSVString))
+
+'''
+with open("comp.vdb") as f:
+    componentCSVString=f.read()
+with open("thermo0.vdb") as f:
+    speciesCSVString=f.read()
+'''
+'''
+solutionFromWholeTableau([
+["","a330","c150","c140",],
+["c330","1","0","0",],
+["c150","0","1","0",],
+["c140","0","0","1",],
+["s3300020","-1","0","0",],
+["s1503300","-1","1","0",],
+["s3301400","1","0","1",],
+["s3301401","2","0","1",],
+["s1501400","1","1","1",],
+["s1501401","0","1","1",],
+["z5015001","0","1","1",],
+["Total Concentrations",0,"1.0000e-3","1.0000e-3",],
+]
+,componentCSVString, speciesCSVString,alk=2*pow(10,-4.385543547101724)+pow(10,-4.092151350599188)+pow(10,-4.090392196502537))
+'''
 '''
 import timeit
 
@@ -492,7 +510,7 @@ solutionFromWholeTableau(
 ["z5015001", 1, 0, 1],
 ["z2015000", 0, -2, 1],
 ["Total Concentrations", 1e-3, 0, 1e-3]
-])
+], componentCSVString, speciesCSVString)
 solutionFromWholeTableau([
 [""        , "c330", "c460", "c140", "c150"],
 ["c330"    , "1"   , "0"   , "0"   , "0"],
@@ -513,7 +531,7 @@ solutionFromWholeTableau([
 ["z5015001", "0"   , "0"   , "1"   , "1"],
 ["z5015002", "0"   , "1"   , "2"   , "1"],
 ["Total Concentrations", 1e-2, "5.0000e-3", "5.0000e-3", "5.0000e-3"]
-])
+], componentCSVString, speciesCSVString)
 '''
 '''
 solutionFromWholeTableau([["", "c330"],
@@ -526,8 +544,8 @@ solutionFromWholeTableau([["", "c330"],
 #["2015000", 1, -2, 0]
 
 
-'''
 
+'''
 solutionFromWholeTableau(
 [
 ["", "a330","c140"],
@@ -537,7 +555,7 @@ solutionFromWholeTableau(
 ["s3301400", 1, 1],
 ["s3301401", 2, 1],
 ["Total Concentrations", 0, 1e-4]
-], alk=1e-3)
+], componentCSVString, speciesCSVString, alk=1e-3,)
 '''
 
 '''
@@ -545,32 +563,5 @@ sysSystem()
 sys.addEqn(Eqn([Addend(1.0, [Term("x", 1.0)]), Addend(1.0, [Term("y", 1.0)]), Addend(1.0, [Term("z", 1.0)])], -50.0))
 sys.addEqn(Eqn([Addend(3.0, [Term("x", 2.0)]), Addend(2.0, [Term("y", 1.0), Term("x", 1.0)]), Addend(3.0, [Term("z", 1.0)])], -500.0))
 sys.addEqn(Eqn([Addend(50.0, [Term("x", 1.0)]), Addend(3.0, [Term("y", -1.0)]), Addend(50.0, [Term("z", 1.0)])], -10.0))
-#sys.addLinear([[[3, 100], [2, 500], [3, 250]], -500])
-#sys.addLinear([[[50, 250], [1, 100], [50, 500]], -10])
 sys.calcJacobian()
 '''
-'''
-solutionFromWholeTableau([
-[""              , "H^+", "HCO3^-", "logK"],
-["H^+"            ,  1  ,    0   ,   0   ],
-["OH^-"           , -1  ,    0   ,  -14  ],
-["H2CO3"          ,  1  ,    1   ,  6.3  ],
-["HCO3^-"         ,  0  ,    1   ,   0   ],
-["CO3^2-"         , -1  ,    1   , -10.3 ],
-["Concentrations" , 1e-3   ,  1e-4  ,   ""  ]
-])
-'''
-'''
-[1e-07+0, 1e-07+0, 0.1995262314968879*[HCO3^-]^1+0, 1*[HCO3^-]^1+0, 0.0005011872336272714*[HCO3^-]^1+0]
-[1e-07+-1e-07+0.1995262314968879*[HCO3^-]^1+-0.0005011872336272714*[HCO3^-]^1+0, 0.1995262314968879*[HCO3^-]^1+1*[HCO3^-]^1+0.0005011872336272714*[HCO3^-]^1+-0.0001]
-{'H^+': 1e-07, 'OH^-': 1e-07, 'H2CO3': array([1.662680605314524e-05]), 'HCO3^-': array([8.333142929833052e-05]), 'CO3^2-': array([4.176464852423683e-08])}
-'''
-
-
-'''
-[[-350.        ]
- [ 349.18367347]
- [  50.81632653]]
-'''
-#componentCSVStringToDatabase(componentCSVString)
-#speciesCSVStringToDatabase(speciesCSVString)
