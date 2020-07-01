@@ -106,9 +106,11 @@ function addComponents(){
     }
   });
   speciesMap.forEach(function(species, id){
-    $("#selectpicker-edit-alkalinity").append("<option value='s"+id+"'>"+species[0]+"</option>");
-    if($("#CopyRowAlkEqn").nextAll("[data-species='s"+id+"']").length!=0){
-      $("#selectpicker-edit-alkalinity").children().last().hide();
+    if(!solidsMap.has(id) && !gasesMap.has(id)){
+      $("#selectpicker-edit-alkalinity").append("<option value='s"+id+"'>"+species[0]+"</option>");
+      if($("#CopyRowAlkEqn").nextAll("[data-species='s"+id+"']").length!=0){
+        $("#selectpicker-edit-alkalinity").children().last().hide();
+      }
     }
     species[3].forEach((item, i) => {
       $("#selectpicker-component option[value='"+item+"']").each(function(index){

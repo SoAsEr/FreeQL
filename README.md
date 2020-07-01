@@ -1,7 +1,7 @@
 # FreeQL
 FreeQL is a aquatic chemistry equilibrium program, a successor to Visual MINTEQ
 
-It uses the same database as MINTEQ, but the solvers have been rewritten in python and a new interface has been created. It can be used at https://soaser.github.io/FreeQL.
+It uses the same database as MINTEQ, but the solvers have been rewritten in python and a new interface has been created. It can be used at https://soaser.github.io/FreeQL. Please note that it only works on chrome or on the very latest versions of firefox.
 
 # Database
 The database used my FreeQL can be downloaded at https://soaser.github.io/FreeQL/assets/solvers/comp.vdb. As of now, there is no way to add your own components or species, but the logKs can be edited from within the website.
