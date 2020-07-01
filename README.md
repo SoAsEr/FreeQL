@@ -9,6 +9,5 @@ The database used my FreeQL can be downloaded at https://soaser.github.io/FreeQL
 # Performance
 The technique used to solve the equations is a tableau method as described in Morel and Herring (1993). Newton-Rhapson is used to converge on the solution from an initial guess currently universally set at 10^-5. It is written in python, and run in the browser using pyodide. Performance is not spectacular, but if necesary the code can be run natively in the [solver folder](assets/solver). This code has not been heavily optimized, instead focusing on generality and readability.
 
-# How to use
-Once the page has loaded, you will see this screen.
-[main-blank](help/main-blank.png)
+# How to use/Further Documentation
+A tutorial is available at at the [gitbook](https://stephmorel8910.gitbook.io/freeql/#entering-concentrations)
