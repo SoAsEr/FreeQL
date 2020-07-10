@@ -384,7 +384,7 @@ async function calculate(){
   args+="], '''";
   tableau.forEach((row) => {
     if(row[0][0]=="c"){
-      args+=componentsMap.get(row[0].substr(1))[2]
+      args+=componentsMap.get(row[0].substr(1))[2]+"\n"
     }
   });
   args+="''','''"
@@ -393,7 +393,7 @@ async function calculate(){
       var nth=0;
       args+=speciesMap.get(row[0].substr(1))[5].replace(/(?:^|,)"?((?<=")[^"]*|[^,"]*)"?(?=,|$)/g, function (match, i, original) {
           nth++;
-          return (nth === 4 && editedLogKMap.has(row[0].substr(1))) ? ","+editedLogKMap.get(row[0].substr(1)) : match;
+          return (nth === 4 && editedLogKMap.has(row[0].substr(1))) ? ","+editedLogKMap.get(row[0].substr(1)) : match ;
       });
     }
   });
