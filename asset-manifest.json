@@ -1,0 +1,28 @@
+{
+  "files": {
+    "main.css": "/FreeQL/static/css/main.ca5d5443.chunk.css",
+    "main.js": "/FreeQL/static/js/main.89f80085.chunk.js",
+    "main.js.map": "/FreeQL/static/js/main.89f80085.chunk.js.map",
+    "runtime-main.js": "/FreeQL/static/js/runtime-main.2afee0f4.js",
+    "runtime-main.js.map": "/FreeQL/static/js/runtime-main.2afee0f4.js.map",
+    "static/css/2.6db69bf1.chunk.css": "/FreeQL/static/css/2.6db69bf1.chunk.css",
+    "static/js/2.09a1f4d1.chunk.js": "/FreeQL/static/js/2.09a1f4d1.chunk.js",
+    "static/js/2.09a1f4d1.chunk.js.map": "/FreeQL/static/js/2.09a1f4d1.chunk.js.map",
+    "index.html": "/FreeQL/index.html",
+    "precache-manifest.f680b9d6e6b17767e252ec350dca6cc5.js": "/FreeQL/precache-manifest.f680b9d6e6b17767e252ec350dca6cc5.js",
+    "service-worker.js": "/FreeQL/service-worker.js",
+    "static/css/2.6db69bf1.chunk.css.map": "/FreeQL/static/css/2.6db69bf1.chunk.css.map",
+    "static/css/main.ca5d5443.chunk.css.map": "/FreeQL/static/css/main.ca5d5443.chunk.css.map",
+    "static/js/2.09a1f4d1.chunk.js.LICENSE.txt": "/FreeQL/static/js/2.09a1f4d1.chunk.js.LICENSE.txt",
+    "static/js/CalculateResultWorker.a363e9bc.worker.js": "/FreeQL/static/js/CalculateResultWorker.a363e9bc.worker.js",
+    "static/js/CalculateResultWorker.a363e9bc.worker.js.LICENSE.txt": "/FreeQL/static/js/CalculateResultWorker.a363e9bc.worker.js.LICENSE.txt",
+    "static/js/CalculateResultWorker.a363e9bc.worker.js.map": "/FreeQL/static/js/CalculateResultWorker.a363e9bc.worker.js.map"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.2afee0f4.js",
+    "static/css/2.6db69bf1.chunk.css",
+    "static/js/2.09a1f4d1.chunk.js",
+    "static/css/main.ca5d5443.chunk.css",
+    "static/js/main.89f80085.chunk.js"
+  ]
+}
