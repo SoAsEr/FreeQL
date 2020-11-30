@@ -3,7 +3,7 @@ import * as Immutable from "immutable";
 import * as transit from "transit-immutable-js";
 import * as Comlink from "comlink";
 import { componentDBDefaultParams, getComponentDB, getSpeciesDB, speciesDBDefaultParams } from "./getDBs";
-importScripts("/static/js/TableauSolver.js");
+importScripts("static/js/TableauSolver.js");
 
 const fillSpecieTypeTypedArrays=(speciesPresent, componentToColumn, logKChanges, speciesDB, componentsDB, tableau, logKs) => {
   const numComponents=componentToColumn.size;
