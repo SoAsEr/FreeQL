@@ -21,7 +21,7 @@ const ConcentrationTable=React.memo((props) => {
       accessor: ([id, {conc}]) => numberToExpWithTrailing(conc, 4)
     },
     {
-      Header: "-log(Conc)",
+      Header: () => <>&minus;log(Conc)</>,
       id: "negLogConc",
       accessor: ([id, {conc}]) => numberToExpWithTrailing(-Math.log10(conc), 4)
     },

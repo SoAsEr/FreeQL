@@ -143,7 +143,7 @@ const centerSelectStyles = {
 };
 
 const ComponentListHeader=React.memo((props) => {
-  const {hPlusOptionsRef, hPlusOption, setHPlusOption}=props;
+  const {hPlusOptionsRef, defaultVal, onChange}=props;
   return (
     <Row className="mt-4 mb-3">
       <Col xs="3" sm="5" className="center-items">
@@ -155,7 +155,7 @@ const ComponentListHeader=React.memo((props) => {
         </label>
       </Col>
       <Col xs="7" sm="5">
-        <Select isSearchable={false} options={hPlusOptionsRef.current} formatOptionLabel={createFormatOptionLabel(FormattedSupSub)} styles={centerSelectStyles} onChange={useCallback((val) => {setHPlusOption(val)}, [setHPlusOption])} value={hPlusOption}/>
+        <Select isSearchable={false} options={hPlusOptionsRef.current} formatOptionLabel={createFormatOptionLabel(FormattedSupSub)} styles={centerSelectStyles} onChange={onChange} value={defaultVal}/>
       </Col>
       <Col xs="2" className="center-items">
         <OverlayTrigger
@@ -220,9 +220,9 @@ const ComponentRow=React.memo((props) => {
 
 
 const HPlusComponent=React.memo((props) => {
-  const {componentsDB, toggleChecked, updateConc, checked}=props;
+  const {componentsDB, updateConc, componentsInputState, pH}=props;
   return(
-    <ComponentRow  component={componentsDB().hPlusValue} componentsDB={componentsDB} toggleChecked={toggleChecked} updateConc={updateConc} disableCheck={true} controlChecked={checked} noClose/>
+    <ComponentRow  component={componentsDB().hPlusValue} componentsDB={componentsDB} updateConc={pH ? useCallback((component, amt) => updateConc(component, Math.pow(10, -amt)), [updateConc]) : updateConc} disableCheck={true} controlChecked={componentsInputState.get(componentsDB().hPlusValue)?.get("equilChecked")} noClose/>
   );
 });
 

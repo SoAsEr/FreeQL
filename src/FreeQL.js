@@ -1,5 +1,4 @@
-import React, { useState, useRef, useReducer, useCallback, useEffect, Suspense } from 'react';
-import { useId } from "react-id-generator";
+import React, { useState, useRef, useReducer, useCallback, unstable_useOpaqueIdentifier , Suspense } from 'react';
 
 import memoize from 'fast-memoize';
 
@@ -34,7 +33,7 @@ import ConcentrationCalculator from 'worker-loader!./CalculateResultWorker.js'
 import useModalStack from './utils/useModalStack.js';
 import { Results } from './Result.js';
 
-const ScrollContainer=(props) => {
+const ScrollContainer=React.memo((props) => {
   return (
     <div style={{"maxHeight" : "calc(100vh - "+(props.headerHeight+props.footerHeight)+"px)", "overflowY" : "auto", "width": "100%"}}>
       <div style={{"overflowX" : "hidden"}}>
@@ -46,7 +45,7 @@ const ScrollContainer=(props) => {
       </div>
     </div>
   )
-};
+});
 
 const SpinnerComponentRow=React.memo((props) => {
   return (
@@ -108,10 +107,10 @@ const defaultRowInputValue=Immutable.Map({equilChecked: false, conc: ""});
 
 const FreeQL=(props) => {
   const hPlusOptionsRef=useRef([
-    { value: useId(), label: 'totalH' },
-    { value: useId(), label: 'pH' },
-    { value: useId(), label: 'Alkalinity^1' },
-    { value: useId(), label: 'Other Alkalinity' },
+    { value: unstable_useOpaqueIdentifier(), label: 'totalH' },
+    { value: unstable_useOpaqueIdentifier(), label: 'pH' },
+    { value: unstable_useOpaqueIdentifier(), label: 'Alkalinity^1' },
+    { value: unstable_useOpaqueIdentifier(), label: 'Other Alkalinity' },
   ]);
   const ConcentrationCalculatorWorker=useComlinkWorker(ConcentrationCalculator);
   const [totalHOption, pHOption, alkOption, alkOtherOption]=hPlusOptionsRef.current;
@@ -221,7 +220,25 @@ const FreeQL=(props) => {
   const [buttonsHeight, setButtonsHeight]=useState(0);
   const outerAdderHeight=windowSize.height>=700 ? 54 : 0;
   const buttonsRef=useResizeObserver(useCallback(({ height }) => {setButtonsHeight(height);}, [setButtonsHeight]));
-  const [currentModal, openModal, closeModal]=useModalStack()
+  const [currentModal, openModal, closeModal]=useModalStack();
+
+  const createModalOpenCallback=useCallback(memoize((params) => {
+    return () => openModal(params);
+  }), [openModal]);
+  const createModalCloseCallback=useCallback(memoize((params) => {
+    return () => closeModal(params);
+  }), [closeModal]);
+
+  const onHPlusOptionChange=useCallback((val) => {
+    if(hPlusOption===pHOption){
+      toggleChecked(componentsDB().hPlusValue);
+      updateConc(componentsDB().hPlusValue, -Math.log10(componentsInputState.get(componentsDB().hPlusValue).get("conc")))
+    } else if(val===pHOption){
+      toggleChecked(componentsDB().hPlusValue);
+      updateConc(componentsDB().hPlusValue, Math.pow(10, -componentsInputState.get(componentsDB().hPlusValue).get("conc")))
+    }
+    setHPlusOption(val);
+  }, [setHPlusOption, updateConc, hPlusOption, componentsDB, componentsInputState]);
 
   return(
     <Form>
@@ -229,9 +246,9 @@ const FreeQL=(props) => {
         <Row>
           <Col className="p-0">
             <ScrollContainer headerHeight={props.headerHeight} footerHeight={props.footerHeight+buttonsHeight+outerAdderHeight}>
-              <ComponentListHeader  hPlusOptionsRef={hPlusOptionsRef} hPlusOption={hPlusOption} setHPlusOption={setHPlusOption}/>
+              <ComponentListHeader hPlusOptionsRef={hPlusOptionsRef} defaultVal={hPlusOption} onChange={onHPlusOptionChange}/>
               <Suspense fallback={<SpinnerComponentRow/>}>
-                <HPlusComponent checked={hPlusOption!==totalHOption} componentsDB={componentsDB} toggleChecked={toggleChecked} updateConc={updateConc}/>
+                <HPlusComponent pH={pHOption===hPlusOption} componentsDB={componentsDB} componentsInputState={componentsInputState} updateConc={updateConc}/>
               </Suspense>
               <Row>
                 <Col xs="3" sm="5" className="center-items">
@@ -288,7 +305,7 @@ const FreeQL=(props) => {
                 </Col>
               </Row>
               <Suspense fallback={<SpinnerComponentRow/>}>
-                <SpeciesList openTableauModal={() => openModal("tableau")} speciesDB={speciesDB} componentsDB={componentsDB} componentsPresent={componentsPresent} speciesEnabled={speciesEnabled} speciesCouldBePresent={speciesCouldBePresent} setSpeciesEnabled={setSpeciesEnabled}/>
+                <SpeciesList openTableauModal={createModalOpenCallback("tableau")} speciesDB={speciesDB} componentsDB={componentsDB} componentsPresent={componentsPresent} speciesEnabled={speciesEnabled} speciesCouldBePresent={speciesCouldBePresent} setSpeciesEnabled={setSpeciesEnabled}/>
               </Suspense>
             </ScrollContainer>
           </Col>
@@ -298,31 +315,31 @@ const FreeQL=(props) => {
         <Container>
           <Form.Row className="py-3">
             <Col className="d-none d-md-block">
-              <CalculateButton onClick={() => openModal("results")} disableMessage={calculateButtonMessage} className="w-100" variant="primary" calculateNewResult={calculateNewResult}/>
+              <CalculateButton onClick={createModalOpenCallback("results")} disableMessage={calculateButtonMessage} className="w-100" variant="primary" calculateNewResult={calculateNewResult}/>
             </Col>
             <Col className="d-block d-md-none">
-              <Button className="w-100" variant="primary" onClick={() => openModal("species")}>Select Species</Button>
+              <Button className="w-100" variant="primary" onClick={createModalOpenCallback("species")}>Select Species</Button>
             </Col>
           </Form.Row>
         </Container>
       </ResizeObserverWrapper>
-      <Modal show={currentModal==="species"} onHide={() => closeModal("species")} backdrop="static" scrollable>
+      <Modal show={currentModal==="species"} onHide={createModalCloseCallback("species")} backdrop="static" scrollable>
         <Modal.Header closeButton>
           Species
         </Modal.Header>
         <Modal.Body>
           <Suspense fallback={<SpinnerComponentRow/>}>
-            <SpeciesList openTableauModal={() => openModal("tableau")} speciesDB={speciesDB} componentsDB={componentsDB} componentsPresent={componentsPresent} speciesEnabled={speciesEnabled} speciesCouldBePresent={speciesCouldBePresent} setSpeciesEnabled={setSpeciesEnabled}/>
+            <SpeciesList openTableauModal={createModalOpenCallback("tableau")} speciesDB={speciesDB} componentsDB={componentsDB} componentsPresent={componentsPresent} speciesEnabled={speciesEnabled} speciesCouldBePresent={speciesCouldBePresent} setSpeciesEnabled={setSpeciesEnabled}/>
           </Suspense>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => closeModal("species")}>
+          <Button variant="secondary" onClick={createModalCloseCallback("species")}>
             Close
           </Button>
-          <CalculateButton onClick={() => openModal("results")} disableMessage={calculateButtonMessage} className="ml-auto" variant="primary" calculateNewResult={calculateNewResult}/>
+          <CalculateButton onClick={createModalOpenCallback("results")} disableMessage={calculateButtonMessage} className="ml-auto" variant="primary" calculateNewResult={calculateNewResult}/>
         </Modal.Footer>
       </Modal>
-      <Modal size="xl" show={currentModal==="tableau"} onHide={() => closeModal("tableau")} backdrop="static">
+      <Modal size="xl" show={currentModal==="tableau"} onHide={createModalCloseCallback("tableau")} backdrop="static">
         <Modal.Header closeButton>
           <Modal.Title>Tableau</Modal.Title>
         </Modal.Header>
@@ -332,12 +349,12 @@ const FreeQL=(props) => {
           </Suspense>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => closeModal("tableau")}>
+          <Button variant="secondary" onClick={createModalCloseCallback("tableau")}>
             Close
           </Button>
         </Modal.Footer>
       </Modal>
-      <Modal size="xl" show={currentModal==="results"} onHide={() => closeModal(["results", "species"])} backdrop="static" scrollable>
+      <Modal size="xl" show={currentModal==="results"} onHide={createModalCloseCallback(["results", "species"])} backdrop="static" scrollable>
         <Modal.Header closeButton>
           <Modal.Title>Results</Modal.Title>
         </Modal.Header>
@@ -347,7 +364,7 @@ const FreeQL=(props) => {
           </Suspense>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => closeModal(["results", "species"])}>
+          <Button variant="secondary" onClick={createModalCloseCallback(["results", "species"])}>
             Close
           </Button>
         </Modal.Footer>
