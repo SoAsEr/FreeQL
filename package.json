@@ -2,6 +2,7 @@
   "name": "freeql",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://SoAsEr.github.io/FreeQL",
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
@@ -12,6 +13,7 @@
     "csv-parse": "^4.12.0",
     "extra-set": "^2.2.4",
     "fast-memoize": "^2.5.2",
+    "gh-pages": "^3.1.0",
     "immutability-helper": "^3.1.1",
     "immutable": "^4.0.0-rc.12",
     "is-number": "^7.0.0",
@@ -30,6 +32,8 @@
     "worker-loader": "^3.0.5"
   },
   "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",

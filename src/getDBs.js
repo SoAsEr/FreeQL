@@ -44,7 +44,7 @@ const getComponentDB=({url, options, type, callback}) => {
 };
 
 const componentDBDefaultParams=(callback) => ({
-  url: "/assets/defaultdb/comp.vdb", 
+  url: "assets/defaultdb/comp.vdb", 
   type: "link",
   options: {
     linesPerItem: 1,
@@ -155,7 +155,7 @@ const getSpeciesDB=({url, options, type, callback}) => {
 }
 
 const speciesDBDefaultParams=(callback) => ({
-  url: "/assets/defaultdb/thermo.vdb", 
+  url: "assets/defaultdb/thermo.vdb", 
   type: "link",
   options: {
     linesPerItem: 3,
@@ -167,7 +167,7 @@ const speciesDBDefaultParams=(callback) => ({
     components: {row: 1, column: 1, stride: 2},
     componentAmts: {row: 1, column: 0, stride: 2},
     labels: {
-      urls: ["/assets/defaultdb/type6.vdb", "/assets/defaultdb/gases.vdb"],
+      urls: ["assets/defaultdb/type6.vdb", "assets/defaultdb/gases.vdb"],
       linesPerId: 3,
       id: {row: 0, column: 0},
       labelMap: ["solid", "gas"]
