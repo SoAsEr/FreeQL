@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "990f143df2cb3940beff1d8e655ae601",
+    "revision": "43c0cf0ed1ac4ff7b26ebd6b24e09c44",
     "url": "/FreeQL/index.html"
   },
   {
@@ -8,7 +8,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/FreeQL/static/css/2.6db69bf1.chunk.css"
   },
   {
-    "revision": "15cb2c3fa55051ca5881",
+    "revision": "ac4243d2aa0f596acfd5",
     "url": "/FreeQL/static/css/main.ca5d5443.chunk.css"
   },
   {
@@ -20,16 +20,16 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/FreeQL/static/js/2.09a1f4d1.chunk.js.LICENSE.txt"
   },
   {
-    "revision": "6b02023cfe8711752fdc727fa9bb10f4",
-    "url": "/FreeQL/static/js/CalculateResultWorker.a363e9bc.worker.js"
+    "revision": "75417d616ab8e7b29fe63e62697e163e",
+    "url": "/FreeQL/static/js/CalculateResultWorker.f7cc1ef4.worker.js"
   },
   {
     "revision": "906c8a35cf58ebf144e815a563375e87",
-    "url": "/FreeQL/static/js/CalculateResultWorker.a363e9bc.worker.js.LICENSE.txt"
+    "url": "/FreeQL/static/js/CalculateResultWorker.f7cc1ef4.worker.js.LICENSE.txt"
   },
   {
-    "revision": "15cb2c3fa55051ca5881",
-    "url": "/FreeQL/static/js/main.89f80085.chunk.js"
+    "revision": "ac4243d2aa0f596acfd5",
+    "url": "/FreeQL/static/js/main.2b0dfb11.chunk.js"
   },
   {
     "revision": "2e3078c98d89dcf87008",
