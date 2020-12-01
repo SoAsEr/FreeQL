@@ -12,9 +12,8 @@ import ResizeObserverWrapper from './utils/ResizeObserverWrapper.js';
 import { useAsyncResourceWithBoolean } from "./utils/useAsyncResources.js";
 
 import { componentDBDefaultParams, getComponentDB, getSpeciesDB, speciesDBDefaultParams } from './getDBs.js';
-import { ComponentListHeader, HPlusComponent, ComponentsList, ComponentSelectModal, ComponentSelect } from "./Components.js";
-import { SpeciesList } from "./Species.js";
-import { TableauTable } from "./Tableau.js";
+
+import ComponentListHeader from "./component_groups/components/ComponentListHeader.js"
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -31,7 +30,17 @@ import useComlinkWorker from './utils/useComlinkWorker.js';
 //eslint-disable-next-line import/no-webpack-loader-syntax
 import ConcentrationCalculator from 'worker-loader!./CalculateResultWorker.js'
 import useModalStack from './utils/useModalStack.js';
-import { Results } from './Result.js';
+
+const Results = React.lazy(() => import('./component_groups/Result.js'));
+
+const HPlusComponent = React.lazy(() => import("./component_groups/components/HPlusComponent.js"));
+const ComponentList = React.lazy(() => import("./component_groups/components/ComponentList.js"));
+
+const ComponentSelectModal = React.lazy(() => import("./component_groups/components/ComponentSelectModal.js"))
+const ComponentSelect = React.lazy(() => import("./component_groups/components/ComponentSelect.js"))
+
+const SpeciesList = React.lazy(() => import('./component_groups/Species.js'));
+const TableauTable = React.lazy(() => import('./component_groups/Tableau.js'));
 
 const ScrollContainer=React.memo((props) => {
   return (
@@ -233,7 +242,7 @@ const FreeQL=(props) => {
     if(hPlusOption===pHOption){
       toggleChecked(componentsDB().hPlusValue);
       updateConc(componentsDB().hPlusValue, -Math.log10(componentsInputState.get(componentsDB().hPlusValue).get("conc")))
-    } else if(val===pHOption){
+    } else if(val===pHOption) {
       toggleChecked(componentsDB().hPlusValue);
       updateConc(componentsDB().hPlusValue, Math.pow(10, -componentsInputState.get(componentsDB().hPlusValue).get("conc")))
     }
@@ -267,7 +276,7 @@ const FreeQL=(props) => {
               </Row>
               <hr className="mt-0 mb-3"/>
               <Suspense fallback={<SpinnerComponentRow/>}>
-                <ComponentsList componentsDB={componentsDB} componentsPresent={componentsPresent} toggleChecked={toggleChecked} updateConc={updateConc} removeComponents={removeComponents}/>
+                <ComponentList componentsDB={componentsDB} componentsPresent={componentsPresent} toggleChecked={toggleChecked} updateConc={updateConc} removeComponents={removeComponents}/>
               </Suspense>
               <Row>
                 <Col>

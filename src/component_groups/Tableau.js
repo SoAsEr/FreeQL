@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 
-import ConstantValidationTextInput from "./utils/ConstantValidationTextInput";
-import FormattedChemicalCompound from "./Components/FormattedChemicalCompound";
-import useResizeObserver from './utils/useResizeObserver';
+import ConstantValidationTextInput from "../utils/ConstantValidationTextInput";
+import FormattedChemicalCompound from "../formatting/FormattedChemicalCompound";
+import useResizeObserver from '../utils/useResizeObserver';
 
 
 import * as Immutable from "immutable";
@@ -316,4 +316,4 @@ const TableauTable=React.memo((props) => {
   )
 });
 
-export {TableauTable};
+export default TableauTable;

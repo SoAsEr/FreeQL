@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 
-import CenteringDiv from './utils/CenteringDiv';
-import FormattedChemicalCompound from './Components/FormattedChemicalCompound';
+import CenteringDiv from '../utils/CenteringDiv.js';
+import FormattedChemicalCompound from '../formatting/FormattedChemicalCompound.js';
 
 import ListGroup from 'react-bootstrap/ListGroup';
 import Form from 'react-bootstrap/Form';
@@ -76,4 +76,4 @@ const SpeciesList=React.memo((props) => {
   )
 });
 
-export { SpeciesList }
+export default SpeciesList;

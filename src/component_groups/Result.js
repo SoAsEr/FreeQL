@@ -1,11 +1,12 @@
 import React, { useMemo } from "react";
 import * as Immutable from "immutable";
 import { useTable } from "react-table";
-import { numberToExpWithTrailing } from "./utils/string-utils"
 
 import Table from 'react-bootstrap/Table';
-import FormattedChemicalCompound from "./Components/FormattedChemicalCompound";
-import { cumulativeSum } from "./utils/array-utils";
+
+import { numberToExpWithTrailing } from "../utils/string-utils.js"
+import { cumulativeSum } from "../utils/array-utils.js";
+import FormattedChemicalCompound from "../formatting/FormattedChemicalCompound.js";
 
 const ConcentrationTable=React.memo((props) => {
   const { currentResult, style, className } = props;
@@ -217,4 +218,4 @@ const Results = React.memo((props) => {
     return <ResultTables currentResult={currentResult}/>;
   }
 });
-export { Results };  
+export default Results;  
