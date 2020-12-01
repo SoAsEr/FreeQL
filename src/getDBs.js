@@ -1,4 +1,3 @@
-import textToTable from './utils/table-utils.js';
 import { chunk } from 'chunk';
 import * as Immutable from 'immutable';
 
@@ -10,36 +9,110 @@ const getDataWithStride=(item, options, property, i) => {
   return item[options[property].row][options[property].column+i*options[property].stride];
 }
 
-const getComponentDB=({url, options, type, callback}) => {
+function parseCSVWithPartial(str) {
+  let arr = [];
+  let quote = false;
+
+  let lastLineStart=0;
+  let lastMatchEnd=0;
+  let row=0;
+  let col=0;
+  for(const match of str.matchAll(/("")|(")|(,)|(?:(\r\n)|(\n)|(\r))($)?|$/g)){
+    arr[row] = arr[row] || [];
+    arr[row][col] = arr[row][col] || '';
+    if(match[7]){
+      break;
+    }
+    arr[row][col]+=str.substring(lastMatchEnd, match.index);
+    if(match[1]){
+      if(quote){
+        arr[row][col]+='"';
+      }
+      lastMatchEnd=match.index+2;
+    } else if(match[2]){
+      quote=!quote;
+      lastMatchEnd=match.index+1;
+    } else if(match[3]){
+      ++col;
+      lastMatchEnd=match.index+1;
+    } else if(match[4]) {
+      ++row;
+      col=0;
+      lastMatchEnd=match.index+2;
+      lastLineStart=lastMatchEnd;
+    } else if(match[5] || match[6]) {
+      ++row;
+      col=0;
+      lastMatchEnd=match.index+1;
+      lastLineStart=lastMatchEnd;
+    }
+  }
+  return [arr, str.substring(lastLineStart)];
+}
+
+const fetchCSV=(url) => {
+  return fetch(url)
+    .then(
+      response => {
+        const reader=response.body.getReader();
+        let lastLine="";
+        let csvBuilt=[];
+        const chunkParser=(chunk, partial) => {
+          const decodedChunk=lastLine+new TextDecoder("utf-8").decode(chunk);
+          const [parsed, thisLastLine] = parseCSVWithPartial(decodedChunk);
+          if(!partial) {
+            lastLine=thisLastLine;
+            return parsed.slice(0, parsed.length-1);
+          } else {
+            return parsed;
+          }
+        }
+        return new Promise(resolve => {
+          pump();
+          function pump() {
+            return reader.read().then(res => {
+              if(res.done) {
+                csvBuilt=csvBuilt.concat(chunkParser(res.value, true));
+                resolve(csvBuilt);
+                return;
+              }
+              csvBuilt=csvBuilt.concat(chunkParser(res.value));
+              pump();
+            })
+          }
+        })
+      }
+    )
+}
+
+const getComponentDB=async ({url, options, type, callback}) => {
   console.log({url, options, type, callback});
   if(type==="link") {
-    return fetch(url)
-      .then(response => response.text())
-      .then(text => textToTable(text))
-      .then(result => chunk(result, options.linesPerItem))
-      .then(chunks => 
-        ({
-          hPlusValue: options.hPlusValue, 
-          waterValue: options.waterValue,
-          components: Immutable.OrderedMap(chunks.filter(item => Number(getData(item, options, "id"))).map(item => [
-            Number(getData(item, options, "id")),
-            {
-              name: getData(item, options, "name"), 
-              charge: Number(getData(item, options, "charge")),
-            }
-          ]))
-        })
-      ).then(db => {
-        if(!callback) {
-          return db;
-        }
-        const res=callback(db);
-        if(res instanceof Promise){
-          return res.then(_ => db);
-        } else {
-          return db;
-        }
-      });
+    return fetchCSV(url).then(result => chunk(result, options.linesPerItem))
+    .then(chunks => 
+      ({
+        hPlusValue: options.hPlusValue, 
+        waterValue: options.waterValue,
+        components: Immutable.OrderedMap(chunks.filter(item => Number(getData(item, options, "id"))).map(item => [
+          Number(getData(item, options, "id")),
+          {
+            name: getData(item, options, "name"), 
+            charge: Number(getData(item, options, "charge")),
+          }
+        ]))
+      })
+    ).then(db => {
+      if(!callback) {
+        return db;
+      }
+      const res=callback(db);
+      if(res instanceof Promise){
+        return res.then(_ => db);
+      } else {
+        return db;
+      }
+    });
+    
   }
 };
 
@@ -60,9 +133,7 @@ const componentDBDefaultParams=(callback) => ({
 const getSpeciesDB=({url, options, type, callback}) => {
   console.log({url, options, type, callback}); 
   if(type==="link") {
-    return Promise.all([url, ...options.labels.urls].map(url => fetch(url))).then(responses =>{
-      return Promise.all(responses.map(res => res.text().then(text=> textToTable(text))))
-    }).then(tables => {
+    return Promise.all([url, ...options.labels.urls].map(url => fetchCSV(url))).then(tables => {
       const [mainTable, ...labelTables]=tables;
       const labelList=labelTables.map(labelTable => chunk(labelTable, options.linesPerItem)).map(chunkedLabelTable => chunkedLabelTable.map(labelTable => getData(labelTable, options.labels, "id")));
 
@@ -77,32 +148,22 @@ const getSpeciesDB=({url, options, type, callback}) => {
       
       const chunkedMainTable=chunk(mainTable, options.linesPerItem).filter(chunk => Number(chunk[0][0]));
       const db={
-        aqs: {
-          species: Immutable.OrderedMap(),
-          componentToSpecies: Immutable.Map(),
-        },
-        solids: {
-          species: Immutable.OrderedMap(),
-          componentToSpecies: Immutable.Map(),
-        },
-        gases: {
-          species: Immutable.OrderedMap(),
-          componentToSpecies: Immutable.Map(),
-        },
+        aqs: {},
+        solids: {},
+        gases: {},
       }
-      db.aqs.species=db.aqs.species.withMutations(aqSpecies => {
-        db.solids.species=db.solids.species.withMutations(solidSpecies => {
-          db.gases.species=db.gases.species.withMutations(gasSpecies => {
-            const db={aqSpecies, solidSpecies, gasSpecies};
+      db.aqs.species=Immutable.OrderedMap().withMutations(aqSpecies => {  
+        db.solids.species=Immutable.OrderedMap().withMutations(solidSpecies => {
+          db.gases.species=Immutable.OrderedMap().withMutations(gasSpecies => {
+            const db={aqs: aqSpecies, solids: solidSpecies, gases: gasSpecies};
             for(const item of chunkedMainTable){
               const id=Number(getData(item, options, "id"));
-              const property=(labelMap.get(id) ?? "aq")+"Species";
-              db[property].set(id, 
+              db[labelMap.get(id) ?? "aqs"].set(id, 
                 {
                   name: getData(item, options, "name"),
                   charge: Number(getData(item, options, "charge")),
                   logK: Number(getData(item, options, "logK")),
-                  label: labelMap.get(Number(getData(item, options, "id"))) ?? 0,
+                  label: labelMap.get(id) ?? 0,
                   components: Immutable.Map().withMutations((components) => {
                     for(let i=0; i<getData(item, options, "numComponents"); ++i){
                       const component=Number(getDataWithStride(item, options, "components", i));
@@ -116,21 +177,21 @@ const getSpeciesDB=({url, options, type, callback}) => {
           });
         });
       });   
-      db.aqs.componentToSpecies=db.aqs.componentToSpecies.withMutations(aqComponentToSpecies => {
+      db.aqs.componentToSpecies=Immutable.Map().withMutations(aqComponentToSpecies => {
         for(const [speciesId, {components}] of db.aqs.species) {
           for(const [componentId] of components) {
             aqComponentToSpecies.update(componentId, (oldSet=Immutable.Set()) => oldSet.add(speciesId));
           }
         }
       });
-      db.solids.componentToSpecies=db.solids.componentToSpecies.withMutations(solidComponentToSpecies => {
+      db.solids.componentToSpecies=Immutable.Map().withMutations(solidComponentToSpecies => {
         for(const [speciesId, {components}] of db.solids.species) {
           for(const [componentId] of components) {
             solidComponentToSpecies.update(componentId, (oldSet=Immutable.Set()) => oldSet.add(speciesId));
           }
         }
       });
-      db.gases.componentToSpecies=db.gases.componentToSpecies.withMutations(gasComponentToSpecies => {
+      db.gases.componentToSpecies=Immutable.Map().withMutations(gasComponentToSpecies => {
         for(const [speciesId, {components}] of db.gases.species) {
           for(const [componentId] of components) {
             gasComponentToSpecies.update(componentId, (oldSet=Immutable.Set()) => oldSet.add(speciesId));
@@ -170,7 +231,7 @@ const speciesDBDefaultParams=(callback) => ({
       urls: [process.env.PUBLIC_URL+"/assets/defaultdb/type6.vdb", process.env.PUBLIC_URL+"/assets/defaultdb/gases.vdb"],
       linesPerId: 3,
       id: {row: 0, column: 0},
-      labelMap: ["solid", "gas"]
+      labelMap: ["solids", "gases"]
     }
   }, 
   callback, 

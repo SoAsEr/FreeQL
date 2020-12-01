@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback,  useMemo } from 'react';
 
 
 import VirtualizedSelect from "react-select-virtualized";
@@ -9,16 +9,18 @@ import { createFormatOptionLabel } from '../../utils/react-select-utils.js';
 
 import FormattedChemicalCompound from "../../formatting/FormattedChemicalCompound.js";
 
-const ComponentSelect=React.memo((props) => {
+const ComponentSelect=(props) => {  
   const {componentsPresent, componentsDB, addComponents}=props;
-  const availableComponents=Array.from(componentsDB().components
+  
+  const availableComponents=useMemo(() => Array.from(componentsDB().components
     .filter((componentData, componentId) => !componentsPresent.includes(componentId)))
-    .map(([componentId, componentData]) => ({value: componentId, label: componentData.name}));
+    .map(([componentId, componentData]) => ({value: componentId, label: componentData.name}))
+  , [componentsDB, componentsPresent])
   const searchFilter=useComponentSearchFilter(componentsDB);
 
   return(
-    <VirtualizedSelect options={Array.from(availableComponents)} filterOption={(option, searchValue) => searchFilter(option.value, searchValue)} formatOptionLabel={createFormatOptionLabel(FormattedChemicalCompound)} onChange={useCallback((e) => {if(e) {addComponents([e.value])}}, [addComponents])} value=""/>
+    <VirtualizedSelect options={availableComponents} filterOption={(option, searchValue) => searchFilter(option.value, searchValue)} formatOptionLabel={createFormatOptionLabel(FormattedChemicalCompound)} onChange={useCallback((e) => {if(e) {addComponents([e.value])}}, [addComponents])} value=""/>
   )
-});
+};
 
 export default ComponentSelect;

@@ -1,4 +1,6 @@
-import React, { useState, useRef, useReducer, useCallback, unstable_useOpaqueIdentifier , Suspense } from 'react';
+import React, { useState, useRef, useReducer, useCallback , Suspense } from 'react';
+
+import './App.css';
 
 import memoize from 'fast-memoize';
 
@@ -6,9 +8,7 @@ import * as Immutable from 'immutable';
 import * as transit from "transit-immutable-js";
 import update from "immutability-helper"
 
-import useResizeObserver from './utils/useResizeObserver.js';
 import useWindowSize from './utils/useWindowSize.js';
-import ResizeObserverWrapper from './utils/ResizeObserverWrapper.js';
 import { useAsyncResourceWithBoolean } from "./utils/useAsyncResources.js";
 
 import { componentDBDefaultParams, getComponentDB, getSpeciesDB, speciesDBDefaultParams } from './getDBs.js';
@@ -46,11 +46,9 @@ const ScrollContainer=React.memo((props) => {
   return (
     <div style={{"maxHeight" : "calc(100vh - "+(props.headerHeight+props.footerHeight)+"px)", "overflowY" : "auto", "width": "100%"}}>
       <div style={{"overflowX" : "hidden"}}>
-        <ResizeObserverWrapper>
-          <Container fluid>
-            {props.children}
-          </Container>
-        </ResizeObserverWrapper>
+        <Container fluid>
+          {props.children}
+        </Container>
       </div>
     </div>
   )
@@ -103,7 +101,6 @@ const speciesOccurences=(componentToSpecies, componentsPresent) => Immutable.Map
 });
 
 const speciesCouldBePresentOfType=(speciesDB, componentsPresent) => Immutable.OrderedSet().withMutations(ourSpeciesCouldBePresent => {
-  console.log(speciesDB);
   const ourSpeciesOccurences=speciesOccurences(speciesDB.componentToSpecies, componentsPresent);
   for(const [specie, specieData] of speciesDB.species){
     if(ourSpeciesOccurences.get(specie)===specieData.components.size){
@@ -116,10 +113,10 @@ const defaultRowInputValue=Immutable.Map({equilChecked: false, conc: ""});
 
 const FreeQL=(props) => {
   const hPlusOptionsRef=useRef([
-    { value: unstable_useOpaqueIdentifier(), label: 'totalH' },
-    { value: unstable_useOpaqueIdentifier(), label: 'pH' },
-    { value: unstable_useOpaqueIdentifier(), label: 'Alkalinity^1' },
-    { value: unstable_useOpaqueIdentifier(), label: 'Other Alkalinity' },
+    { value: "unique_1", label: 'totalH' },
+    { value: "unique_2", label: 'pH' },
+    { value: "unique_3", label: 'Alkalinity^1' },
+    { value: "unique_4", label: 'Other Alkalinity' },
   ]);
   const ConcentrationCalculatorWorker=useComlinkWorker(ConcentrationCalculator);
   const [totalHOption, pHOption, alkOption, alkOtherOption]=hPlusOptionsRef.current;
@@ -198,7 +195,7 @@ const FreeQL=(props) => {
   }), [speciesCouldBePresent, speciesEnabled]);
 
   const [resultMap, setResultMap]=useState(Immutable.Map());
-  const [currentResult, calculateNewResult, calculatingNewResult]=useAsyncResourceWithBoolean(() => {
+  const [currentResult, calculateNewResult, calculatingNewResult]=useAsyncResourceWithBoolean(useCallback(() => {
     const input={speciesHere: speciesHere(), componentsPresent: Immutable.List(componentsPresent.delete(componentsDB().waterValue)), logKChanges, componentsInputState};
     const inputImmutable=Immutable.fromJS(input);
     let result;
@@ -209,7 +206,7 @@ const FreeQL=(props) => {
       result=resultMap.get(inputImmutable);
     }
     return result; 
-  });
+  }, [resultMap, componentsPresent, ConcentrationCalculatorWorker, componentsDB, componentsInputState, logKChanges, speciesHere]));
 
   const calculateButtonMessage=useCallback(memoize(() => {
     if(calculatingNewResult){
@@ -226,9 +223,10 @@ const FreeQL=(props) => {
   }), [componentsDB, componentsInputState, componentsPresent, gettingNewComponentsDB, gettingNewSpeciesDB, calculatingNewResult]);
 
   const windowSize=useWindowSize();
-  const [buttonsHeight, setButtonsHeight]=useState(0);
+
   const outerAdderHeight=windowSize.height>=700 ? 54 : 0;
-  const buttonsRef=useResizeObserver(useCallback(({ height }) => {setButtonsHeight(height);}, [setButtonsHeight]));
+  const buttonsHeight=70;
+
   const [currentModal, openModal, closeModal]=useModalStack();
 
   const createModalOpenCallback=useCallback(memoize((params) => {
@@ -247,7 +245,7 @@ const FreeQL=(props) => {
       updateConc(componentsDB().hPlusValue, Math.pow(10, -componentsInputState.get(componentsDB().hPlusValue).get("conc")))
     }
     setHPlusOption(val);
-  }, [setHPlusOption, updateConc, hPlusOption, componentsDB, componentsInputState]);
+  }, [setHPlusOption, updateConc, hPlusOption, pHOption, toggleChecked, componentsDB, componentsInputState]);
 
   return(
     <Form>
@@ -320,18 +318,16 @@ const FreeQL=(props) => {
           </Col>
         </Row>
       </Container>
-      <ResizeObserverWrapper ref={buttonsRef}>
-        <Container>
-          <Form.Row className="py-3">
-            <Col className="d-none d-md-block">
-              <CalculateButton onClick={createModalOpenCallback("results")} disableMessage={calculateButtonMessage} className="w-100" variant="primary" calculateNewResult={calculateNewResult}/>
-            </Col>
-            <Col className="d-block d-md-none">
-              <Button className="w-100" variant="primary" onClick={createModalOpenCallback("species")}>Select Species</Button>
-            </Col>
-          </Form.Row>
-        </Container>
-      </ResizeObserverWrapper>
+      <Container>
+        <Form.Row className="py-3">
+          <Col className="d-none d-md-block">
+            <CalculateButton onClick={createModalOpenCallback("results")} disableMessage={calculateButtonMessage} className="w-100" variant="primary" calculateNewResult={calculateNewResult}/>
+          </Col>
+          <Col className="d-block d-md-none">
+            <Button className="w-100" variant="primary" onClick={createModalOpenCallback("species")}>Select Species</Button>
+          </Col>
+        </Form.Row>
+      </Container>
       <Modal show={currentModal==="species"} onHide={createModalCloseCallback("species")} backdrop="static" scrollable>
         <Modal.Header closeButton>
           Species

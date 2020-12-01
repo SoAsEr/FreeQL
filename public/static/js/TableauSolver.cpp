@@ -306,7 +306,7 @@ class SolidSystem{
                     if(auto newSolidRef=conditionallyRemove(solid); newSolidRef) [[likely]] {
                         return {newSolidRef, std::nullopt};
                     } else if(!solidNeedsToDisolve){
-                        std::cout<<"WARNING: EITHER NEARLY LOOPED OR GIBBS RULE FAILED (remove)"<<std::endl;
+                        //std::cout<<"WARNING: EITHER NEARLY LOOPED OR GIBBS RULE FAILED (remove)"<<std::endl;
                         solidNeedsToDisolve=solid;
                     }
                 } else {
@@ -317,8 +317,8 @@ class SolidSystem{
         }
         std::pair<std::optional<std::reference_wrapper<Solid>>, std::optional<std::reference_wrapper<Solid>>> possiblyAddSolid(const SolidVector& solubilityProducts){
             std::optional<std::reference_wrapper<Solid>> solidNeedsToForm{std::nullopt};
-            for(auto indexHeap=SolidVectorHeapIndexCompare<std::greater<Index>>(SM_utils::CountingIterator(0), SM_utils::CountingIterator(solubilityProducts.rows()), {solubilityProducts}); //used to test remove
-            //for(auto indexHeap=SolidVectorHeapIndexCompare<std::less<void>>(SM_utils::CountingIterator(0), SM_utils::CountingIterator(solubilityProducts.rows()), {solubilityProducts});
+            //for(auto indexHeap=SolidVectorHeapIndexCompare<std::greater<Index>>(SM_utils::CountingIterator(0), SM_utils::CountingIterator(solubilityProducts.rows()), {solubilityProducts}); //used to test remove
+            for(auto indexHeap=SolidVectorHeapIndexCompare<std::less<void>>(SM_utils::CountingIterator(0), SM_utils::CountingIterator(solubilityProducts.rows()), {solubilityProducts});
                 Index iThSolidNotPresent : SM_utils::ConsumingRange(indexHeap)) {
 
                 if(solubilityProducts.coeff(iThSolidNotPresent)>1.0) [[likely]] { //the long running cases will have lots of solids being added
@@ -327,7 +327,7 @@ class SolidSystem{
                         //conditionally add invalidated our reference 
                         return {newSolidRef, std::nullopt};
                     } else if(!solidNeedsToForm){
-                        std::cout<<"WARNING: EITHER NEARLY LOOPED OR GIBBS RULE FAILED (add)"<<std::endl;
+                        //std::cout<<"WARNING: EITHER NEARLY LOOPED OR GIBBS RULE FAILED (add)"<<std::endl;
                         solidNeedsToForm=solid;
                     }
                 } else {
@@ -563,7 +563,7 @@ Result solve(const TableauWithTotal<>& tableau,
         
         const auto [solidDisolved, solidNeedsToDisolve]=solidSystem.possiblyRemoveSolid(solidAmts);
         if(solidDisolved) [[unlikely]] {
-            std::cout<<"WARNING: removing solid should happen very rarely"<<std::endl;
+            //std::cout<<"WARNING: removing solid should happen very rarely"<<std::endl;
             replacementDict.removeSolid(solidDisolved.value());
             continue;
         }
@@ -579,7 +579,7 @@ Result solve(const TableauWithTotal<>& tableau,
         
         {
             if(solidNeedsToDisolve) [[unlikely]] {
-                std::cout<<"WARNING: RECOVERING: UNTESTED"<<std::endl;
+                //std::cout<<"WARNING: RECOVERING: UNTESTED"<<std::endl;
                 [&, &solidNeedsToDisolve=solidNeedsToDisolve](){  
                     //yes, we do recalculate the heaps. This should run so rarely the overhead of copying it (it's on the stack so it can't be moved) unconditionally would be worse than the recalculation probably
                     for(auto indexHeap=SolidVectorHeapIndexCompare<std::less<void>>(SM_utils::CountingIterator(0), SM_utils::CountingIterator(solubilityProducts.rows()), {solubilityProducts});
@@ -588,13 +588,13 @@ Result solve(const TableauWithTotal<>& tableau,
                             return;
                         }
                     }
-                    std::cout<<"failed to recover from loop or gibbs"<<std::endl;
+                    //std::cout<<"failed to recover from loop or gibbs"<<std::endl;
                     std::abort();
                 }();
                 continue;
             }
             if(solidNeedsToForm) [[unlikely]] {
-                std::cout<<"WARNING: RECOVERING: UNTESTED"<<std::endl;
+                //std::cout<<"WARNING: RECOVERING: UNTESTED"<<std::endl;
                 [&, &solidNeedsToForm=solidNeedsToForm](){
                     for(auto indexHeap=SolidVectorHeapIndexCompare<std::greater<void>>(SM_utils::CountingIterator(0), SM_utils::CountingIterator(solidAmts.rows()), {solidAmts});
                         Index iThSolidPresent : SM_utils::ConsumingRange(indexHeap)) {
@@ -602,7 +602,7 @@ Result solve(const TableauWithTotal<>& tableau,
                             return;
                         }
                     }
-                    std::cout<<"failed to recover from loop or gibbs"<<std::endl;
+                    //std::cout<<"failed to recover from loop or gibbs"<<std::endl;
                     std::abort();
                 }();
                 continue;

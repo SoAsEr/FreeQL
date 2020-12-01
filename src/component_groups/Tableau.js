@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 
 import ConstantValidationTextInput from "../utils/ConstantValidationTextInput";
 import FormattedChemicalCompound from "../formatting/FormattedChemicalCompound";
-import useResizeObserver from '../utils/useResizeObserver';
+import useResizeObserver from '../utils/useResizeObserver.js';
 
 
 import * as Immutable from "immutable";
@@ -277,7 +277,7 @@ const TableauTable=React.memo((props) => {
                   if(column.id==="name"){
                     return (
                       <th {...column.getFooterProps({
-                        className: "vertical-align-middle sticky-x-header-lg sticky",
+                        className: "vertical-align-middle sticky-header-lg sticky",
                       })}>
                         {
                           column.render('Footer')

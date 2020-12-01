@@ -1,11 +1,11 @@
 import { useCallback, useRef } from "react";
 
-const useCallbackRef=(onUpdate , cleanupOld, onNull) => {
+const useCallbackRef=(onUpdate , cleanupOld, onNull=() => {}) => {
   const ref = useRef(null)
   const setRef = useCallback(node => {
     if (ref.current) {
       cleanupOld(ref.current);
-    }
+    } 
     
     if (node) {
       onUpdate(node)

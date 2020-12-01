@@ -1,4 +1,4 @@
-import { useCallback, unstable_useTransition, useRef, useState, useEffect, useMemo } from "react";
+import { useCallback, useState, useEffect, useMemo } from "react";
 
 function wrapPromise(promise) {
   let status = "pending";
@@ -25,7 +25,7 @@ function wrapPromise(promise) {
 }
 
 const useAsyncResourceWithBoolean=(getter, initialParams) => {
-  const [dataCallbackRef, setDataCallbackRef]=useState({current: null});
+  const [dataCallbackRef, setDataCallbackRef]=useState({current: undefined});
   const [transitionState, setTransitionState]=useState(!!initialParams);
 
   const getNewData=useCallback((params) => {
@@ -33,18 +33,20 @@ const useAsyncResourceWithBoolean=(getter, initialParams) => {
     setDataCallbackRef({current: wrapPromise(getter(params).then((result) => {setTransitionState(false); return result}))});
   }, [setDataCallbackRef, getter]);
 
+  
   const getData=useMemo(() => {
-    if(dataCallbackRef.current || !initialParams){
+    console.log("went through memo");
+    if(dataCallbackRef.current || initialParams===undefined){
       return dataCallbackRef.current;
     } else {
       return () => {
         throw new Promise(() => {});
       }
     }
-  }, [dataCallbackRef]);
+  }, [dataCallbackRef, transitionState]);
 
   useEffect(() => {
-    if(initialParams){
+    if(initialParams!==undefined){
       getNewData(initialParams);
     }
   }, []);

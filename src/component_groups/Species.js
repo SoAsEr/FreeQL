@@ -15,7 +15,7 @@ const SpeciesListItem=React.memo((props) => {
   const {id, type, setSpecieEnabled, name, enabled}=props;
   const extraCheckProps = setSpecieEnabled ? {onChange: (e) => setSpecieEnabled(e, id, type), disabled: false} : {disabled : true, readOnly: true};
   return (
-    <ListGroup.Item className="d-flex" style={enabled ? {} : {"color": "#6c757d", "backgroundColor": "#fff"}}>
+    <ListGroup.Item className={"d-flex "+(enabled ? "" : "disabled-look")}>
       <CenteringDiv start="lg">
         <Form.Check style={{"pointerEvents" : "auto"}} checked={enabled} {...extraCheckProps} />
       </CenteringDiv>

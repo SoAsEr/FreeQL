@@ -1,22 +1,26 @@
 import { useRef, useCallback } from "react";
-
 import { useCallbackRef } from "./ref-utils";
 
-
-const useResizeObserver=(callback) =>{
-  const resizeObsRef=useRef(new ResizeObserver((entries) => {
-    const boundingRect=entries[0].target.getBoundingClientRect();
-    callback({width: boundingRect.width, height: boundingRect.height})
-  }));
-  return useCallbackRef(
+const useResizeObserver=(callback) => {
+  const resizeObserverRef=useRef(null);
+  const getResizeObserverRef=useCallback(() => {
+    if(!resizeObserverRef.current){
+      resizeObserverRef.current=new ResizeObserver((entries) => {
+        const boundingRect=entries[0].target.getBoundingClientRect();
+        callback({width: boundingRect.width, height: boundingRect.height})
+      })
+    }
+    return resizeObserverRef;
+  }, [resizeObserverRef, callback])
+  const nodeRef=useCallbackRef(
     useCallback((node) => {
-      resizeObsRef.current.observe(node)
-    }, [resizeObsRef]), 
+      getResizeObserverRef().current.observe(node)
+    },[getResizeObserverRef]),
     useCallback((node) => {
-      resizeObsRef.current.unobserve(node)
-    }, [resizeObsRef]),
-    useCallback(() => callback({width: 0, height: 0}), [callback])
-  );
+      getResizeObserverRef().current.unobserve(node)
+    },[getResizeObserverRef])
+  )
+  return nodeRef;
 }
-  
+
 export default useResizeObserver;

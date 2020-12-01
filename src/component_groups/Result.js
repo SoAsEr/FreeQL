@@ -196,9 +196,9 @@ const SolublilityProductTable=React.memo((props) => {
 const ResultTables=React.memo((props) => {
   return (
     <>
-      <ConcentrationTable currentResult={props.currentResult} className="mb-4 lc-mb-0"/>
-      <TotalConcentrationTable currentResult={props.currentResult} className="mb-4 lc-mb-0"/>
-      <SolublilityProductTable currentResult={props.currentResult} className="mb-4 lc-mb-0"/>
+      <ConcentrationTable currentResult={props.currentResult} className="mb-4 mb-lc-0"/>
+      <TotalConcentrationTable currentResult={props.currentResult} className="mb-4 mb-lc-0"/>
+      <SolublilityProductTable currentResult={props.currentResult} className="mb-4 mb-lc-0"/>
     </>
   );
 });

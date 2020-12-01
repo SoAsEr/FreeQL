@@ -133,7 +133,7 @@ thead.tr.th.sticky-column{
 }
 
 
-tbody tr th.sticky-header{
+tfoot tr th.sticky-header, tbody tr th.sticky-header{
   z-index: 1;
   left:0;
 }
@@ -158,7 +158,7 @@ tbody tr th.sticky-header{
     z-index: 2;
     top:0;
   }
-  tbody tr th.sticky-header-lg{
+  tbody tr th.sticky-header-lg, tfoot tr th.sticky-header-lg{
     z-index: 1;
     left:0;
   }
@@ -189,8 +189,13 @@ tbody tr th.sticky-header{
   pointer-events: none;
 }
 
-.lc-mb-0:last-child{
+.mb-lc-0:last-child{
   margin-bottom: 0!important;
+}
+
+.disabled-look{
+  color: #6c757d;
+  background-color: #fff;
 }
 
 

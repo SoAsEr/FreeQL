@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import * as Comlink from "comlink";;
 
 const useComlinkWorker=(WorkerClass, parameters) => {
-  const [comlinkWrapper, setComlinkWrapper]=useState({current: null});
+  const wrapperRef=useRef(null);
   useEffect(() => {
     const worker=new WorkerClass(parameters);
-    setComlinkWrapper({current: Comlink.wrap(worker)});
+    const comlinkwrap=Comlink.wrap(worker);
+    wrapperRef.current=comlinkwrap;
     return () => {worker.terminate()}
   }, []);
-  return comlinkWrapper.current;
+  return wrapperRef.current;
 }
 
 export default useComlinkWorker;
