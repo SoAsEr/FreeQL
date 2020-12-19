@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "17fd52fbb999640b248ee34acb3df739",
+    "revision": "ef2dfe89e81f0f3c95aef590050fed7e",
     "url": "/FreeQL/index.html"
   },
   {
@@ -8,7 +8,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/FreeQL/static/css/7.6db69bf1.chunk.css"
   },
   {
-    "revision": "990ac254726fa2345c99",
+    "revision": "c54482bd0f420d532e6d",
     "url": "/FreeQL/static/css/main.dc3a714f.chunk.css"
   },
   {
@@ -80,8 +80,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/FreeQL/static/js/CalculateResultWorker.0713872e.worker.js"
   },
   {
-    "revision": "990ac254726fa2345c99",
-    "url": "/FreeQL/static/js/main.c54c15e4.chunk.js"
+    "revision": "c54482bd0f420d532e6d",
+    "url": "/FreeQL/static/js/main.4a871afd.chunk.js"
   },
   {
     "revision": "210343144eaead8edbb8",
