@@ -22,7 +22,7 @@ function App() {
       <Navbar expand="sm" bg="dark" variant="dark">
         <CenteringDiv end="sm">
           <Navbar.Brand href="/">
-            <img src={process.env.PUBLIC_URL+"/assets/img/logo.png"} width="65" alt="FreeQL"/>
+            <img src={process.env.PUBLIC_URL+"/assets/img/logo.svg"} width="65" alt="FreeQL"/>
           </Navbar.Brand>
         </CenteringDiv>
         <Navbar.Brand href="/">FreeQL</Navbar.Brand>
