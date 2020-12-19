@@ -1,10 +1,13 @@
-import React, { useState, useCallback, Suspense } from 'react';
+import React, { Suspense } from 'react';
+
+import './App.scss';
 
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+
 import CenteringDiv from './utils/CenteringDiv.js';
 import useWindowSize from './utils/useWindowSize.js';
 
@@ -19,7 +22,7 @@ function App() {
       <Navbar expand="sm" bg="dark" variant="dark">
         <CenteringDiv end="sm">
           <Navbar.Brand href="/">
-            <img src="assets/img/logo.png" width="65" alt="FreeQL"/>
+            <img src={process.env.PUBLIC_URL+"/assets/img/logo.png"} width="65" alt="FreeQL"/>
           </Navbar.Brand>
         </CenteringDiv>
         <Navbar.Brand href="/">FreeQL</Navbar.Brand>

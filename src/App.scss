@@ -198,6 +198,27 @@ tfoot tr th.sticky-header, tbody tr th.sticky-header{
   background-color: #fff;
 }
 
+.border-red{
+  border: 2px solid red;
+}
+
+.no-border{
+  border: 2px solid transparent;
+}
+
+.my-checked{
+  margin-left: -3px;
+}
+.nowrap{
+  white-space: nowrap;
+}
+
+.no-select{
+  user-select: none;
+}
+
+$enable-validation-icons: false;
+@import "../node_modules/bootstrap/scss/bootstrap";
 
 /*
 inset 1000px 1000px rgba(0,0,0,.075)

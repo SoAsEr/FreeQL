@@ -36,18 +36,18 @@ void userInput(std::vector<double>& aqConcRes, std::vector<double>& totConcRes, 
 
     const Map<Matrix<double, Dynamic, Dynamic, RowMajor>> replacementTableau(replacementTableauVect.data(), replacementConstantsVect.size(), totalConcentrationsVect.size());
     const Map<VectorXd> replacementConstants(replacementConstantsVect.data(), replacementConstantsVect.size());
-/*
-    std::cout<<aqueousTableau<<std::endl<<std::endl;
-    std::cout<<aqueousKs<<std::endl<<std::endl;
-    std::cout<<totalConcentrations<<std::endl<<std::endl;    
 
-    std::cout<<solidsTableau<<std::endl<<std::endl;    
-    std::cout<<solidKs<<std::endl<<std::endl;    
+    //std::cout<<aqueousTableau<<std::endl<<std::endl;
+    //std::cout<<aqueousKs<<std::endl<<std::endl;
+    //std::cout<<totalConcentrations<<std::endl<<std::endl;    
 
-    SM_utils::print_vect(replacementColumnsVect);
-    std::cout<<replacementTableau<<std::endl<<std::endl;
-    std::cout<<replacementConstants<<std::endl<<std::endl;
-*/
+    //std::cout<<solidsTableau<<std::endl<<std::endl;    
+    //std::cout<<solidKs<<std::endl<<std::endl;    
+
+    //SM_utils::print_vect(replacementColumnsVect);
+    //std::cout<<replacementTableau<<std::endl<<std::endl;
+    //std::cout<<replacementConstants<<std::endl<<std::endl;
+
     Result res=solve({{aqueousTableau, aqueousKs}, totalConcentrations},
     {{solidsTableau, solidKs}, {}},
     {replacementColumnsVect, {replacementTableau, replacementConstants}});

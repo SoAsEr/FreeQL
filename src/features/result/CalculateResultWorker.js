@@ -1,46 +1,41 @@
 /* eslint-disable */
 import * as Immutable from "immutable";
-import * as transit from "transit-immutable-js";
+import {stringify, parse} from "../../utils/serialize-immutable-deep.js";
 import * as Comlink from "comlink";
-import { componentDBDefaultParams, getComponentDB, getSpeciesDB, speciesDBDefaultParams } from "./getDBs";
+import { fetchComponentDB, fetchSpeciesDB } from "../fetchDBs";
 importScripts( process.env.PUBLIC_URL+"/static/js/TableauSolver.js");
 
-const fillSpecieTypeTypedArrays=(speciesPresent, componentToColumn, logKChanges, speciesDB, componentsDB, tableau, logKs) => {
+const fillSpecieTypeTypedArrays=(speciesPresent, componentToColumn, logKChanges, speciesDB, tableau, logKs) => {
   const numComponents=componentToColumn.size;
-  console.log(speciesPresent);
-  console.log(tableau);
   tableau.resize(numComponents*speciesPresent.size, 0);
   logKs.resize(speciesPresent.size, 0);
-  speciesPresent.forEach((specie, index) => {
-    const specieData=speciesDB.species.get(specie);
-    specieData.components.delete(componentsDB.waterValue).forEach((numComponent, component) => {
-      tableau.set(index*numComponents+componentToColumn.get(component), numComponent);
+  speciesPresent.toIndexedSeq().forEach((specie, index) => {
+    const specieData=speciesDB.get(specie);
+    componentToColumn.forEach((column, component) => {
+      tableau.set(index*numComponents+column, specieData.components.get(component) ?? 0);
     });
     logKs.set(index, Math.pow(10, logKChanges.get(specie) ?? specieData.logK));
   });
 }
 
-const fillReplacementArrayWithComponents=(componentsAtEquilibrium, componentsInputState, componentToColumn, replacementColumns, replacementTableau, replacementConstants) => {
+const fillReplacementArrayWithComponents=(componentsAtEquilibrium, componentsConc, componentToColumn, replacementColumns, replacementTableau, replacementConstants) => {
   const numComponents=componentToColumn.size;
   replacementColumns.resize(componentsAtEquilibrium.size, 0);
   replacementTableau.resize(componentsAtEquilibrium.size*numComponents, 0);
   replacementConstants.resize(componentsAtEquilibrium.size, 0);
-  console.log(componentsAtEquilibrium);
-  componentsAtEquilibrium.forEach((component, index) => {
-    console.log(component);
+  componentsAtEquilibrium.toIndexedSeq().forEach((component, index) => {
     replacementColumns.set(index, componentToColumn.get(component));
     replacementTableau.set(index*numComponents+componentToColumn.get(component), 1);
-    replacementConstants.set(index, 1/componentsInputState.get(component).get("conc"));
+    replacementConstants.set(index, 1/componentsConc.get(component));
   })
 }
 
-const fillTotalConcentrations=(componentsPresent, componentsInputState, totalConcentrations) => {
-  const componentToColumn=Immutable.OrderedMap(componentsPresent.map((index, value) => [index, value]));
+const fillTotalConcentrations=(componentsConc, componentsAtEquilibrium, totalConcentrations) => {
+  const componentToColumn=Immutable.OrderedMap(Immutable.Seq(componentsConc.keys()).toIndexedSeq().map((value, index) => [value, index]));
   totalConcentrations.resize(componentToColumn.size, 0);
-
   componentToColumn.forEach((index, component) => {
-    if(!componentsInputState.get(component).get("equilChecked")) {
-      totalConcentrations.set(index, componentsInputState.get(component).get("conc"));
+    if(!componentsAtEquilibrium.has(component)) {
+      totalConcentrations.set(index, componentsConc.get(component));
     }
   });
   return componentToColumn;
@@ -49,7 +44,6 @@ const fillTotalConcentrations=(componentsPresent, componentsInputState, totalCon
 const addComponentsToAqs=(componentToColumn, aqueousSpeciesTableau, aqueousSpeciesLogKs) => {
   const originalTableauSize=aqueousSpeciesTableau.size();
   const numComponents=componentToColumn.size;
-  console.log(originalTableauSize);
   
   aqueousSpeciesLogKs.resize(aqueousSpeciesLogKs.size()+numComponents, 1);
   aqueousSpeciesTableau.resize(originalTableauSize+numComponents*numComponents, 0);
@@ -77,10 +71,10 @@ let solidConcResult;
 let solidsNotPresentResult;
 let solidSolubilityProductResult;
 
-let componentsDB;
-let speciesDB;
+let componentDBPromise;
+let speciesDBPromise;
 
-const finshedVectorInitialization=Promise.all([
+const finshedVectorInitialization=
   Module().then((Module) => {
     totalConcentrations  =new Module.VectorDouble();
     aqueousSpeciesTableau=new Module.VectorDouble();
@@ -98,26 +92,18 @@ const finshedVectorInitialization=Promise.all([
     solidsNotPresentResult=new Module.VectorInt();
     solidSolubilityProductResult=new Module.VectorDouble();
     return Module;
-  }),
-  getComponentDB(componentDBDefaultParams()).then(db => {componentsDB=db}),
-  getSpeciesDB(speciesDBDefaultParams()).then(db => {speciesDB=db}),
-]);
-finshedVectorInitialization.then(() => console.log("doneInits"));
+  })
 const expose={
-  changeComponentsDB(componentDBParams, speciesDBParams){
-    return Promise.all([
-      getComponentDB(componentDBParams).then(db => {componentsDB=db}),
-      getSpeciesDB(speciesDBParams).then(db => {speciesDB=db}),
-    ])
+  changeComponentDB(params){
+    componentDBPromise=fetchComponentDB(params);
+  },
+  changeSpeciesDB(params) {
+    speciesDBPromise=fetchSpeciesDB(params);
   },
   calculate(serializedParameters) {
-    const parameters=transit.fromJSON(serializedParameters);
-    const {componentsPresent, componentsInputState, speciesHere, logKChanges}=parameters;
-    const componentsPresentMathematically=componentsPresent.filter(component => !componentsInputState.get(component).get("equilChecked"));
-    const componentsAtEquilibrium=componentsPresent.filter(component => componentsInputState.get(component).get("equilChecked"));
-    console.log(parameters);
-    return finshedVectorInitialization.then(([Module]) => {
-      console.log("in here");
+    const parameters=parse(serializedParameters);
+    const {componentsConc, componentsAtEquilibrium, speciesPresent, logKChanges}=parameters;
+    return Promise.all([finshedVectorInitialization, componentDBPromise, speciesDBPromise]).then(([Module, componentDB, speciesDB]) => {
       totalConcentrations.resize(0,0);
       aqueousSpeciesTableau.resize(0,0);
       aqueousSpeciesLogKs.resize(0,0);
@@ -127,11 +113,16 @@ const expose={
       replacementTableau.resize(0,0);
       replacementConstants.resize(0,0);
 
-      const componentToColumn=fillTotalConcentrations(componentsPresent, componentsInputState, totalConcentrations);
-      fillSpecieTypeTypedArrays(speciesHere.aqs, componentToColumn, logKChanges.aqs, speciesDB.aqs, componentsDB, aqueousSpeciesTableau, aqueousSpeciesLogKs);
+      const componentToColumn=fillTotalConcentrations(componentsConc, componentsAtEquilibrium, totalConcentrations);
+      //console.log("here0")
+      fillSpecieTypeTypedArrays(speciesPresent.aqs, componentToColumn, logKChanges.aqs, speciesDB.aqs, aqueousSpeciesTableau, aqueousSpeciesLogKs);
+      //console.log("here1")
       addComponentsToAqs(componentToColumn, aqueousSpeciesTableau, aqueousSpeciesLogKs);
-      fillReplacementArrayWithComponents(componentsAtEquilibrium, componentsInputState, componentToColumn, replacementColumns, replacementTableau, replacementConstants);
-      fillSpecieTypeTypedArrays(speciesHere.solids, componentToColumn, logKChanges.solids, speciesDB.solids, componentsDB, solidSpeciesTableau, solidSpeciesLogKs);
+      //console.log("here2")
+      fillReplacementArrayWithComponents(componentsAtEquilibrium, componentsConc, componentToColumn, replacementColumns, replacementTableau, replacementConstants);
+      //console.log("here3")
+      fillSpecieTypeTypedArrays(speciesPresent.solids, componentToColumn, logKChanges.solids, speciesDB.solids, solidSpeciesTableau, solidSpeciesLogKs);
+      //console.log("here4")
       try {
         Module.userInput(
           aqConcResult, totConcResult, solidsPresentResult, solidConcResult, solidsNotPresentResult, solidSolubilityProductResult
@@ -155,46 +146,43 @@ const expose={
       }
         
 
-      return transit.toJSON({
+      const ret={
         aqs: Immutable.OrderedMap().withMutations((aqsMap) => {
-          for(const [i, specie] of speciesHere.aqs.entries()) {
+          for(const [i, specie] of speciesPresent.aqs.toIndexedSeq().entries()) {
             aqsMap.set(specie, {
-              ...speciesDB.aqs.species.get(specie),
               conc: aqConcResult.get(i),
             });
           }
         }),
         components: Immutable.OrderedMap().withMutations((components) => {
-          for(const [i, component] of componentsPresent.entries()) {
+          for(const [i, component] of Immutable.Seq(componentsConc.keys()).toIndexedSeq().entries()) {
             components.set(component, {
-              ...componentsDB.components.get(component),
-              conc: aqConcResult.get(i+speciesHere.aqs.size),
+              conc: aqConcResult.get(i+speciesPresent.aqs.size),
               totalConc: totConcResult.get(componentToColumn.get(component)),
             });
           }
         }),
-        solidsPresent: new Immutable.OrderedMap().withMutations((solidSpeciesPresentMap) => {
+        solidsPresent: Immutable.OrderedMap().withMutations((solidSpeciesPresentMap) => {
           const numPresent=solidsPresentResult.size();
           for(let i=0; i<numPresent; i++) {
-            const solid=speciesHere.solids.get(solidsPresentResult.get(i));
+            const solid=speciesPresent.solids.toIndexedSeq().get(solidsPresentResult.get(i));
             solidSpeciesPresentMap.set(solid, {
-              ...speciesDB.solids.species.get(solid),
               conc: solidConcResult.get(i),
             });
           }
         }),
-        solidsNotPresent: new Immutable.OrderedMap().withMutations((solidSpeciesNotPresentMap) => {
+        solidsNotPresent: Immutable.OrderedMap().withMutations((solidSpeciesNotPresentMap) => {
           const numPresent=solidsNotPresentResult.size();
           for(let i=0; i<numPresent; i++) {
-            const solid=speciesHere.solids.get(solidsNotPresentResult.get(i));
+            const solid=speciesPresent.solids.toIndexedSeq().get(solidsNotPresentResult.get(i));
             solidSpeciesNotPresentMap.set(solid, {
-              ...speciesDB.solids.species.get(solid),
               solubilityProduct: solidSolubilityProductResult.get(i)
             });
           }
         }),
-      });
+      };
+      return stringify(ret);
     });
   },
 }
-Comlink.expose(expose);
+Comlink.expose(expose); 

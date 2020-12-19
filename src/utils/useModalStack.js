@@ -6,7 +6,7 @@ const useModalStack=() => {
   const currentModal=modalsStack.peek();
   const closeModal=useCallback((modalName) => {
     if(Array.isArray(modalName)){
-      setModalsStack(modalsStack.withMutations(stack => {
+      setModalsStack(modalsStack => modalsStack.withMutations(stack => {
         for(const name of modalName){
           if(stack.peek()===name) {
             stack.pop();
@@ -14,12 +14,12 @@ const useModalStack=() => {
         }
       }));
     } else if(currentModal===modalName) {
-      setModalsStack(modalsStack.pop());
+      setModalsStack(modalsStack => modalsStack.pop());
     }
-  }, [setModalsStack, currentModal, modalsStack]);
+  }, [setModalsStack, currentModal]);
   const openModal=useCallback((modalName) => {
-    setModalsStack(modalsStack.push(modalName));
-  }, [setModalsStack, modalsStack]);
+    setModalsStack(modalsStack => modalsStack.push(modalName));
+  }, [setModalsStack]);
   return [currentModal, openModal, closeModal]
 }
 

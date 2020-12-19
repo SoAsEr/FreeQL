@@ -331,7 +331,7 @@ class SolidSystem{
                         solidNeedsToForm=solid;
                     }
                 } else {
-                    //return {std::nullopt, solidNeedsToForm}; //comment out to test remove
+                    return {std::nullopt, solidNeedsToForm}; //comment out to test remove
                 } 
             }
             return {std::nullopt, solidNeedsToForm};
@@ -701,9 +701,9 @@ int main(){
     //std::chrono::duration<double> diff = end-start;
     std::cout<<res.aqueousConcentrations<<std::endl<<std::endl;
     std::cout<<res.totalConcentrations<<std::endl<<std::endl;
-    SM_utils::print_vect(res.solidsPresent);
+    //SM_utils::print_vect(res.solidsPresent);
     std::cout<<res.solidConcentrations<<std::endl<<std::endl;
-    SM_utils::print_vect(res.solidsNotPresent);
+    //SM_utils::print_vect(res.solidsNotPresent);
     std::cout<<res.solidSolubilityProducts<<std::endl<<std::endl;
 */
 }

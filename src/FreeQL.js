@@ -1,50 +1,49 @@
-import React, { useState, useRef, useReducer, useCallback , Suspense } from 'react';
-
-import './App.css';
+import React, { useEffect, useCallback } from 'react';
 
 import memoize from 'fast-memoize';
 
-import * as Immutable from 'immutable';
-import * as transit from "transit-immutable-js";
-import update from "immutability-helper"
-
 import useWindowSize from './utils/useWindowSize.js';
-import { useAsyncResourceWithBoolean } from "./utils/useAsyncResources.js";
-
-import { componentDBDefaultParams, getComponentDB, getSpeciesDB, speciesDBDefaultParams } from './getDBs.js';
-
-import ComponentListHeader from "./component_groups/components/ComponentListHeader.js"
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
-import Spinner from 'react-bootstrap/Spinner';
 import Modal from 'react-bootstrap/Modal';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
 
-
-import useComlinkWorker from './utils/useComlinkWorker.js';
-//eslint-disable-next-line import/no-webpack-loader-syntax
-import ConcentrationCalculator from 'worker-loader!./CalculateResultWorker.js'
 import useModalStack from './utils/useModalStack.js';
+import CalculateButton from './features/result/CalculateButton';
+import ReduxSuspense from './utils/ReduxSuspense';
+import { getNewComponentDB } from './features/components/componentsSlice';
+import { getNewSpeciesDB } from './features/species/speciesSlice';
 
-const Results = React.lazy(() => import('./component_groups/Result.js'));
+import { useDispatch } from 'react-redux';
 
-const HPlusComponent = React.lazy(() => import("./component_groups/components/HPlusComponent.js"));
-const ComponentList = React.lazy(() => import("./component_groups/components/ComponentList.js"));
+import SpinnerComponentRow from './reusable_components/SpinnerRow';
 
-const ComponentSelectModal = React.lazy(() => import("./component_groups/components/ComponentSelectModal.js"))
-const ComponentSelect = React.lazy(() => import("./component_groups/components/ComponentSelect.js"))
+import {componentDBDefaultParams, speciesDBDefaultParams} from "./features/fetchDBs.js"
 
-const SpeciesList = React.lazy(() => import('./component_groups/Species.js'));
-const TableauTable = React.lazy(() => import('./component_groups/Tableau.js'));
+import {ComponentListHeader, HPlusHeader} from "./features/components/ComponentHeaders.js";
+
+import PlusCircle from './reusable_components/svgs/plus-circle.js';
+import PlusCircleFilled from './reusable_components/svgs/plus-circle-filled.js';
+
+
+const Results = React.lazy(() => import('./features/result/Results.js'));
+const ComponentList = React.lazy(() => import("./features/components/ComponentList.js"));
+const GasList = React.lazy(() => import('./features/species/gases/GasList'));
+
+const HPlusRow = React.lazy(() => import('./features/components/HPlusRow.js'));
+
+const ComponentSelectModal = React.lazy(() => import("./features/components/ComponentSelectModal.js"))
+const ComponentSelect = React.lazy(() => import("./features/components/ComponentSelect.js"))
+
+const SpeciesList = React.lazy(() => import('./features/species/SpeciesList.js'));
+const TableauTable = React.lazy(() => import('./features/species/tableau/Tableau.js'));
 
 const ScrollContainer=React.memo((props) => {
   return (
-    <div style={{"maxHeight" : "calc(100vh - "+(props.headerHeight+props.footerHeight)+"px)", "overflowY" : "auto", "width": "100%"}}>
+    <div className="w-100" style={{"maxHeight" : "calc(100vh - "+(props.headerHeight+props.footerHeight)+"px)", "overflowY" : "auto"}}>
       <div style={{"overflowX" : "hidden"}}>
         <Container fluid>
           {props.children}
@@ -54,173 +53,12 @@ const ScrollContainer=React.memo((props) => {
   )
 });
 
-const SpinnerComponentRow=React.memo((props) => {
-  return (
-    <Row className="mb-3" style={{"height": "38px"}}>
-      <Col className="center-items">
-        <Spinner animation="border" role="status">
-          <span className="sr-only">Loading...</span>
-        </Spinner>
-      </Col>
-    </Row>
-  );
-});
-
-const CalculateButton=React.memo((props) => {
-  const { calculateNewResult, disableMessage, onClick, ...restProps }=props;
-  const disabled=!!disableMessage();
-  const button=<Button {...restProps} onClick={(e) => {onClick(e); calculateNewResult();} } disabled={disabled}>Calculate</Button>;
-  if(disabled) {
-    return (
-      <OverlayTrigger
-        placement="top"
-        overlay={
-          <Tooltip>
-            {disableMessage()}
-          </Tooltip>
-        }
-      >
-        <div className="disabled-button-wrapper">
-          {button}
-        </div>
-      </OverlayTrigger>
-    )
-  } else {
-    return button;
-  }
-});
-
-const speciesOccurences=(componentToSpecies, componentsPresent) => Immutable.Map().withMutations((map) => {
-  for(const componentId of componentsPresent) {
-    if(componentToSpecies.has(componentId)){
-      for(const specieId of componentToSpecies.get(componentId)) {
-        map.update(specieId, (num=0)=>num+1);
-      }
-    }
-  }
-});
-
-const speciesCouldBePresentOfType=(speciesDB, componentsPresent) => Immutable.OrderedSet().withMutations(ourSpeciesCouldBePresent => {
-  const ourSpeciesOccurences=speciesOccurences(speciesDB.componentToSpecies, componentsPresent);
-  for(const [specie, specieData] of speciesDB.species){
-    if(ourSpeciesOccurences.get(specie)===specieData.components.size){
-      ourSpeciesCouldBePresent.add(specie);
-    } 
-  }
-})
-
-const defaultRowInputValue=Immutable.Map({equilChecked: false, conc: ""});
-
 const FreeQL=(props) => {
-  const hPlusOptionsRef=useRef([
-    { value: "unique_1", label: 'totalH' },
-    { value: "unique_2", label: 'pH' },
-    { value: "unique_3", label: 'Alkalinity^1' },
-    { value: "unique_4", label: 'Other Alkalinity' },
-  ]);
-  const ConcentrationCalculatorWorker=useComlinkWorker(ConcentrationCalculator);
-  const [totalHOption, pHOption, alkOption, alkOtherOption]=hPlusOptionsRef.current;
-  const [hPlusOption, setHPlusOption]=useState(totalHOption);
-
-  const [componentsInputState, componentsInputStateReducer]=useReducer(
-    (oldState, action) => {
-      switch(action.action){
-        case "add":
-          return oldState.withMutations((map) => {
-            for(const componentToAdd of action.value.components){
-              map.set(componentToAdd, defaultRowInputValue);
-            }
-          });
-        case "remove":
-          return oldState.removeAll(action.value.components);
-        case "toggleEquilChecked":
-          return oldState.updateIn([action.value.component, "equilChecked"], (val) => !val);
-        case "setConc":
-          return oldState.setIn([action.value.component, "conc"], action.value.conc);
-        default:
-          throw new Error();
-      }
-    }, 
-    Immutable.Map()
-  );
-  const updateConc=useCallback((component, conc)=> {
-    componentsInputStateReducer({action: "setConc", value : {component, conc}});
-  }, [componentsInputStateReducer]);
-  const toggleChecked=useCallback((component) => {
-    componentsInputStateReducer({action: "toggleEquilChecked", value: {component}});
-  }, [componentsInputStateReducer]);
-
-  const [componentsPresent, setComponentsPresent]=useState(Immutable.OrderedSet());
-  const addComponents=useCallback((components) => {
-    componentsInputStateReducer({action: "add", value: {components}});
-    setComponentsPresent(componentsPresent.union(components));
-  }, [componentsPresent, setComponentsPresent, componentsInputStateReducer]);
-  const removeComponents=useCallback((components) => {
-    componentsInputStateReducer({action: "remove", value: {components}});
-    setComponentsPresent(componentsPresent.subtract(components));
-  }, [componentsPresent, setComponentsPresent, componentsInputStateReducer]);
-
-  const [speciesEnabled, setSpeciesEnabled]=useState({
-    aqs: Immutable.OrderedSet(),
-    solids: Immutable.OrderedSet(),
-    gases: Immutable.OrderedSet(),
-  });
-  const [logKChanges, setLogKChanges]=useState({
-    aqs: Immutable.Map(),
-    solids: Immutable.Map(),
-    gases: Immutable.Map(),
-  });
-
-  const [componentsDB, getNewComponentsDB, gettingNewComponentsDB]=useAsyncResourceWithBoolean(getComponentDB, componentDBDefaultParams((db) => {
-    console.log(db);
-    addComponents([db.waterValue, db.hPlusValue]);
-  }));
-  const [speciesDB, getNewSpeciesDB, gettingNewSpeciesDB]=useAsyncResourceWithBoolean(getSpeciesDB, speciesDBDefaultParams((db) => {
-    console.log(db);
-    setSpeciesEnabled(update(speciesEnabled, {aqs : {$set: Immutable.Set(db.aqs.species.keys())}}));
-  }));
-
-  const speciesCouldBePresent=useCallback(memoize(() => ({
-    aqs: speciesCouldBePresentOfType(speciesDB().aqs, componentsPresent),
-    solids: speciesCouldBePresentOfType(speciesDB().solids, componentsPresent),
-    gases: speciesCouldBePresentOfType(speciesDB().gases, componentsPresent),
-  })), [speciesDB, componentsPresent]);
-
-  const speciesHere=useCallback(memoize(() => {
-    return {
-      aqs: Immutable.List(speciesCouldBePresent().aqs.intersect(speciesEnabled.aqs)),
-      solids: Immutable.List(speciesCouldBePresent().solids.intersect(speciesEnabled.solids)),
-      gases: Immutable.List(speciesCouldBePresent().gases.intersect(speciesEnabled.gases)),
-    }
-  }), [speciesCouldBePresent, speciesEnabled]);
-
-  const [resultMap, setResultMap]=useState(Immutable.Map());
-  const [currentResult, calculateNewResult, calculatingNewResult]=useAsyncResourceWithBoolean(useCallback(() => {
-    const input={speciesHere: speciesHere(), componentsPresent: Immutable.List(componentsPresent.delete(componentsDB().waterValue)), logKChanges, componentsInputState};
-    const inputImmutable=Immutable.fromJS(input);
-    let result;
-    if(!resultMap.has(inputImmutable)) {
-      result=ConcentrationCalculatorWorker.calculate(transit.toJSON(input)).then(res => transit.fromJSON(res)).catch((error) => error);
-      //setResultMap(resultMap.set(inputImmutable, result));
-    } else {
-      result=resultMap.get(inputImmutable);
-    }
-    return result; 
-  }, [resultMap, componentsPresent, ConcentrationCalculatorWorker, componentsDB, componentsInputState, logKChanges, speciesHere]));
-
-  const calculateButtonMessage=useCallback(memoize(() => {
-    if(calculatingNewResult){
-      return "Calculating..."
-    } else if(gettingNewComponentsDB || gettingNewSpeciesDB){
-      return "Getting Databases..."
-    } else if(componentsInputState.filter((componentData, component) => componentsDB().waterValue!==component && componentsPresent.has(component)).find((componentData, component) => {
-      return typeof componentData.get("conc")!=="number";
-    })) {
-      return "At least one component is empty or invalid";
-    } else {
-      return false;
-    }
-  }), [componentsDB, componentsInputState, componentsPresent, gettingNewComponentsDB, gettingNewSpeciesDB, calculatingNewResult]);
+  const dispatch=useDispatch();
+  useEffect(() => {
+    dispatch(getNewComponentDB(componentDBDefaultParams));
+    dispatch(getNewSpeciesDB(speciesDBDefaultParams));
+  }, [dispatch])
 
   const windowSize=useWindowSize();
 
@@ -236,71 +74,52 @@ const FreeQL=(props) => {
     return () => closeModal(params);
   }), [closeModal]);
 
-  const onHPlusOptionChange=useCallback((val) => {
-    if(hPlusOption===pHOption){
-      toggleChecked(componentsDB().hPlusValue);
-      updateConc(componentsDB().hPlusValue, -Math.log10(componentsInputState.get(componentsDB().hPlusValue).get("conc")))
-    } else if(val===pHOption) {
-      toggleChecked(componentsDB().hPlusValue);
-      updateConc(componentsDB().hPlusValue, Math.pow(10, -componentsInputState.get(componentsDB().hPlusValue).get("conc")))
-    }
-    setHPlusOption(val);
-  }, [setHPlusOption, updateConc, hPlusOption, pHOption, toggleChecked, componentsDB, componentsInputState]);
-
   return(
     <Form>
       <Container style={{"height" : "calc(100vh - "+(props.headerHeight+buttonsHeight+props.footerHeight)+"px)"}}>
         <Row>
           <Col className="p-0">
             <ScrollContainer headerHeight={props.headerHeight} footerHeight={props.footerHeight+buttonsHeight+outerAdderHeight}>
-              <ComponentListHeader hPlusOptionsRef={hPlusOptionsRef} defaultVal={hPlusOption} onChange={onHPlusOptionChange}/>
-              <Suspense fallback={<SpinnerComponentRow/>}>
-                <HPlusComponent pH={pHOption===hPlusOption} componentsDB={componentsDB} componentsInputState={componentsInputState} updateConc={updateConc}/>
-              </Suspense>
-              <Row>
-                <Col xs="3" sm="5" className="center-items">
-                  <label className="w-100 d-none d-sm-block text-muted text-center">
-                    Components
-                  </label>
-                  <label className="w-100 d-block d-sm-none text-muted text-center">
-                    Comp.
-                  </label>
-                </Col>
-                <Col xs={{span: 7, offset: 0}} sm={{span: 5, offset:0}}>
-                  <label className="w-100 text-muted text-center">
-                    Total Conc.
-                  </label>
-                </Col>
-              </Row>
-              <hr className="mt-0 mb-3"/>
-              <Suspense fallback={<SpinnerComponentRow/>}>
-                <ComponentList componentsDB={componentsDB} componentsPresent={componentsPresent} toggleChecked={toggleChecked} updateConc={updateConc} removeComponents={removeComponents}/>
-              </Suspense>
-              <Row>
-                <Col>
-                  {
-                    windowSize.height<700 &&
-                    <div className="d-flex center-items w-100">
-                      <Suspense fallback="">
-                        <ComponentSelectModal componentsPresent={componentsPresent} componentsDB={componentsDB} addComponents={addComponents} windowHeight={windowSize.height}/>
-                      </Suspense>
-                    </div>
-                  }
-                </Col>
-              </Row>
+              <HPlusHeader />
+              <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB"]}>
+                <HPlusRow />
+              </ReduxSuspense>
+              <ComponentListHeader />
+              <ReduxSuspense fallback="" subscribedItems={["componentDB"]}>
+                <ComponentList />
+              </ReduxSuspense>
+              <ReduxSuspense fallback="" subscribedItems={["componentDB", "speciesDB"]}>
+                <GasList />
+              </ReduxSuspense>
+              {
+                windowSize.height<700 &&
+                <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB"]}>
+                  <Row>
+                    <Col>
+                      <div className="d-flex center-items w-100">
+                        <div className="hover-switch" style={{"width" : "15%"}} onClick={createModalOpenCallback("addComponents")}>
+                          <PlusCircle className="w-100"/>
+                          <PlusCircleFilled className="w-100"/>
+                        </div>
+                        <ComponentSelectModal show={currentModal==="addComponents"} close={createModalCloseCallback("addComponents")} windowHeight={windowSize.height}/>
+                      </div>
+                    </Col>
+                  </Row>
+                </ReduxSuspense>
+              }
             </ScrollContainer>
-            <Container fluid>
-              <Row className="pt-3">
-                <Col>
-                  {
-                    windowSize.height>=700 &&
-                    <Suspense fallback="">
-                      <ComponentSelect componentsPresent={componentsPresent} componentsDB={componentsDB} addComponents={addComponents}/>
-                    </Suspense>
-                  }
-                </Col>
-              </Row>
-            </Container>
+            {
+              windowSize.height>=700 &&
+              <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB"]}>
+                <Container fluid>
+                  <Row className="pt-3">
+                    <Col>
+                      <ComponentSelect />
+                    </Col>
+                  </Row>
+                </Container>
+              </ReduxSuspense>
+            }
           </Col>
           <Col xs="4" className="d-none d-md-flex p-0">
             <ScrollContainer headerHeight={props.headerHeight} footerHeight={props.footerHeight+buttonsHeight}>
@@ -311,9 +130,9 @@ const FreeQL=(props) => {
                   </h5>
                 </Col>
               </Row>
-              <Suspense fallback={<SpinnerComponentRow/>}>
-                <SpeciesList openTableauModal={createModalOpenCallback("tableau")} speciesDB={speciesDB} componentsDB={componentsDB} componentsPresent={componentsPresent} speciesEnabled={speciesEnabled} speciesCouldBePresent={speciesCouldBePresent} setSpeciesEnabled={setSpeciesEnabled}/>
-              </Suspense>
+              <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB", "speciesDB"]}>
+                <SpeciesList openTableauModal={createModalOpenCallback("tableau")} />
+              </ReduxSuspense>
             </ScrollContainer>
           </Col>
         </Row>
@@ -321,7 +140,7 @@ const FreeQL=(props) => {
       <Container>
         <Form.Row className="py-3">
           <Col className="d-none d-md-block">
-            <CalculateButton onClick={createModalOpenCallback("results")} disableMessage={calculateButtonMessage} className="w-100" variant="primary" calculateNewResult={calculateNewResult}/>
+            <CalculateButton onClick={createModalOpenCallback("results")} className="w-100" variant="primary"/>
           </Col>
           <Col className="d-block d-md-none">
             <Button className="w-100" variant="primary" onClick={createModalOpenCallback("species")}>Select Species</Button>
@@ -333,15 +152,15 @@ const FreeQL=(props) => {
           Species
         </Modal.Header>
         <Modal.Body>
-          <Suspense fallback={<SpinnerComponentRow/>}>
-            <SpeciesList openTableauModal={createModalOpenCallback("tableau")} speciesDB={speciesDB} componentsDB={componentsDB} componentsPresent={componentsPresent} speciesEnabled={speciesEnabled} speciesCouldBePresent={speciesCouldBePresent} setSpeciesEnabled={setSpeciesEnabled}/>
-          </Suspense>
+          <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB", "speciesDB"]}>
+            <SpeciesList openTableauModal={createModalOpenCallback("tableau")}/>
+          </ReduxSuspense>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={createModalCloseCallback("species")}>
             Close
           </Button>
-          <CalculateButton onClick={createModalOpenCallback("results")} disableMessage={calculateButtonMessage} className="ml-auto" variant="primary" calculateNewResult={calculateNewResult}/>
+          <CalculateButton onClick={createModalOpenCallback("results")} className="ml-auto" variant="primary" />
         </Modal.Footer>
       </Modal>
       <Modal size="xl" show={currentModal==="tableau"} onHide={createModalCloseCallback("tableau")} backdrop="static">
@@ -349,9 +168,9 @@ const FreeQL=(props) => {
           <Modal.Title>Tableau</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Suspense fallback={<SpinnerComponentRow/>}>
-            <TableauTable logKChanges={logKChanges} setLogKChanges={setLogKChanges} componentsPresent={componentsPresent} componentsInputState={componentsInputState} windowWidth={windowSize.width} speciesHere={speciesHere} speciesEnabled={speciesEnabled} speciesDB={speciesDB} componentsDB={componentsDB}/>
-          </Suspense>
+          <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB", "speciesDB"]}>
+            <TableauTable windowWidth={windowSize.width} />
+          </ReduxSuspense>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={createModalCloseCallback("tableau")}>
@@ -363,16 +182,9 @@ const FreeQL=(props) => {
         <Modal.Header closeButton>
           <Modal.Title>Results</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          <Suspense fallback={<SpinnerComponentRow/>}>
-            <Results currentResult={currentResult}/>
-          </Suspense>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={createModalCloseCallback(["results", "species"])}>
-            Close
-          </Button>
-        </Modal.Footer>
+        <ReduxSuspense fallback={<><Modal.Body><SpinnerComponentRow/></Modal.Body><Modal.Footer></Modal.Footer></>} subscribedItems={["componentDB", "speciesDB", "calculateResult"]}>
+          <Results Body={Modal.Body} Footer={Modal.Footer}/>
+        </ReduxSuspense>
       </Modal>
     </Form>
   );
