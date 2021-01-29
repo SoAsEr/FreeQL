@@ -31,7 +31,7 @@ const GasListItem=React.memo(({gas}) => {
           dispatch(setGasPartialPressure({gas, value}));
         }}
         onRemove={() => {
-          dispatch(disableSpecies({species: [gas], type: "gases"}));
+          dispatch(disableSpecies({gases: [gas]}));
         }}
       />
       <RadioRow 
