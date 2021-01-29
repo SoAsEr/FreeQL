@@ -8,17 +8,18 @@ import components from "./features/components/componentsSlice.js";
 import loading from "./features/loadingSlice.js";
 import species from "./features/species/speciesSlice.js";
 import gasInput from "./features/species/gases/gasInputSlice.js";
-import results from "./features/result/resultsSlice.js";
+import equilibria from "./features/equilibria/equilibriaSlice.js";
 
 import { combineReducers, configureStore, getDefaultMiddleware } from '@reduxjs/toolkit'
 import { Provider } from 'react-redux'
+import { StrictMode } from 'react';
 
 const reducer=combineReducers({
   components,
   loading,
   species,
   gasInput,
-  results,
+  equilibria,
 });
 const store = configureStore({
   reducer,
@@ -39,7 +40,9 @@ ReactDOM.render(
 const rootEl = document.getElementById("root");
 ReactDOM.render(
   <Provider store={store}>
-    <App />
+    <StrictMode>
+      <App />
+    </StrictMode>
   </Provider>, rootEl
 );
 //ReactDOM.unstable_createRoot(rootEl).render(<App />);

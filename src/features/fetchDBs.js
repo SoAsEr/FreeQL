@@ -13,7 +13,7 @@ const fetchSpeciesDB=({url, options, type, callback}) => {
       const labelMap=Immutable.Map().withMutations((labelMap) => {
         for(const [index, labelTable] of labelList.entries()) {
           for(const specie of labelTable){
-            labelMap.set(Number(specie), options.labels.labelMap[index]);
+            labelMap.set(specie, options.labels.labelMap[index]);
           }
         };
       });
@@ -29,7 +29,7 @@ const fetchSpeciesDB=({url, options, type, callback}) => {
           db.gases=Immutable.Map().withMutations(gasSpecies => {
             const db={aqs: aqSpecies, solids: solidSpecies, gases: gasSpecies};
             for(const item of chunkedMainTable){
-              const id=Number(getData(item, options, "id"));
+              const id=getData(item, options, "id");
               const dbAddingTo=db[labelMap.get(id) ?? "aqs"]
               dbAddingTo.set(id, 
                 {
@@ -40,7 +40,7 @@ const fetchSpeciesDB=({url, options, type, callback}) => {
                   index: dbAddingTo.size,
                   components: Immutable.OrderedMap().withMutations((components) => {
                     for(let i=0; i<getData(item, options, "numComponents"); ++i){
-                      const component=Number(getDataWithStride(item, options, "components", i));
+                      const component=getDataWithStride(item, options, "components", i);
                       const componentAmt=Number(getDataWithStride(item, options, "componentAmts", i));
                       components.set(component, componentAmt);
                     }
@@ -64,8 +64,8 @@ const fetchComponentDB=({url, options, type, callback}) => {
       ({
         hPlusValue: options.hPlusValue, 
         waterValue: options.waterValue,
-        components: Immutable.OrderedMap(chunks.filter(item => Number(getData(item, options, "id"))).map(item => [
-          Number(getData(item, options, "id")),
+        components: Immutable.OrderedMap(chunks.filter(item => getData(item, options, "id")).map(item => [
+          getData(item, options, "id"),
           {
             name: getData(item, options, "name"), 
             charge: Number(getData(item, options, "charge")),
@@ -85,8 +85,8 @@ const componentDBDefaultParams={
     id: {row: 0, column: 0},
     name: {row: 0, column: 1},
     charge: {row: 0, column: 2},
-    hPlusValue: 330,
-    waterValue: 2,
+    hPlusValue: "330",
+    waterValue: "2",
   }, 
 };
 

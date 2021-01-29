@@ -10,35 +10,47 @@ import { numberToExpWithTrailing } from "../../utils/string-utils.js"
 import { cumulativeSum } from "../../utils/array-utils.js";
 import FormattedChemicalCompound from "../../reusable_components/formatting/FormattedChemicalCompound.js";
 import { useSelector } from "react-redux";
-import { getCalculations, getResult } from "./resultsSlice.js";
 
 import ReactPaginate from 'react-paginate';
 import useWindowSize from "../../utils/useWindowSize.js";
+import { getEquilibria } from "./equilibriaSlice.js";
+import { pending } from "../loadingSlice.js";
+import SpinnerComponentRow from "../../reusable_components/SpinnerRow.js";
+/*
+7.7 ph
+10^-3.5 
+tic = 10^-3
 
-const ConcentrationTable=React.memo(({ currentContext, currentResult, style, className }) => {
+*/
+
+
+
+const ConcentrationTable=React.memo(({ context, equilibrium, style, className }) => {
   const columns=useMemo(() => [
     {
       Header: "Species",
       id: "name",
-      accessor: ([id, {db}]) => <FormattedChemicalCompound>{db.get(id).name}</FormattedChemicalCompound>
+      accessor: ({id, db}) => <FormattedChemicalCompound>{db.get(id).name}</FormattedChemicalCompound>
     },
     {
       Header: "Conc",
       id: "conc",
-      accessor: ([id, {conc}]) => numberToExpWithTrailing(conc, 4)
+      accessor: ({concentration}) => numberToExpWithTrailing(concentration, 4)
     },
     {
       Header: () => <>&minus;log(Conc)</>,
       id: "negLogConc",
-      accessor: ([id, {conc}]) => numberToExpWithTrailing(-Math.log10(conc), 4)
+      accessor: ({concentration}) => numberToExpWithTrailing(-Math.log10(concentration), 4)
     },
-  ], [])
+  ], []);
+  console.log(equilibrium);
 
   const data=useMemo(() => Immutable.List([
-    Immutable.List(currentResult.components.map(component => ({...component, db: currentContext.componentDB.components }))),
-    Immutable.List(currentResult.aqs.map(component => ({...component, db: currentContext.speciesDB.aqs }))),
-    Immutable.List(currentResult.solidsPresent.map(component => ({...component, db: currentContext.speciesDB.solids }))),
-  ]).flatten(true), [currentResult, currentContext]);
+    Immutable.List(equilibrium.species.component.map(({componentId, concentration}) => ({id: componentId, concentration, db: context.componentDB.components }))).sortBy(({id}) => context.componentDB.components._map.get(id)),
+    Immutable.List(equilibrium.species.aqueous.map(({id, concentration}) => ({id, concentration, db: context.speciesDB.aqs }))).sortBy(({id}) => context.speciesDB.aqs.get(id).index),
+    Immutable.List(equilibrium.species?.solid?.present?.map(({id, concentration}) => ({id, concentration, db: context.speciesDB.solids }))).sortBy(({id}) => context.speciesDB.solids.get(id).index),
+  ]).flatten(true), [equilibrium, context]);
+  console.log(data);
 
   const {
     getTableProps,
@@ -51,7 +63,7 @@ const ConcentrationTable=React.memo(({ currentContext, currentResult, style, cla
     data,
   });
 
-  const borderLengths=useMemo(() => Immutable.Set(cumulativeSum([currentResult.components.size, currentResult.aqs.size, currentResult.solidsPresent.size])).filter(item => item!==data.size && item!==0), [currentResult, data.size]);
+  const borderLengths=useMemo(() => Immutable.Set(cumulativeSum([equilibrium.species.component.size, equilibrium.species.aqueous.size, equilibrium.solid?.present?.size])).filter(item => item!==data.size && item!==0), [equilibrium, data.size]);
   return (
     <Table bordered {...getTableProps({style, className})}>
       <thead>
@@ -60,7 +72,7 @@ const ConcentrationTable=React.memo(({ currentContext, currentResult, style, cla
             {headerGroup.headers.map(column => (
               <th {...column.getHeaderProps()}>{column.render('Header')}</th>
             ))}
-          </tr>
+          </tr> 
         ))}
       </thead>
       <tbody {...getTableBodyProps()}>
@@ -80,22 +92,22 @@ const ConcentrationTable=React.memo(({ currentContext, currentResult, style, cla
   )
 });
 
-const TotalConcentrationTable=React.memo(({currentResult, currentContext, style, className}) => {
+const TotalConcentrationTable=React.memo(({context, equilibrium, style, className}) => {
 
   const columns=useMemo(() => [
     {
       Header: "Component",
       id: "name",
-      accessor: ([id, {db}]) => <FormattedChemicalCompound>{db.get(id).name}</FormattedChemicalCompound>
+      accessor: ({id, db}) => <FormattedChemicalCompound>{db.get(id).name}</FormattedChemicalCompound>
     },
     {
       Header: "Calculated Total Conc",
       id: "totalConc",
-      accessor: ([id, {totalConc}]) => numberToExpWithTrailing(totalConc, 4)
+      accessor: ({total}) => numberToExpWithTrailing(total, 4)
     },
   ], []);
 
-  const data=useMemo(() => Immutable.List(currentResult.components.map(component => ({...component, db: currentContext.componentDB.components }))), [currentResult, currentContext]);
+  const data=useMemo(() => Immutable.List(equilibrium.totalConcentrations.map(({componentId, total}) => ({id: componentId, total, db: context.componentDB.components }))).sortBy(({id}) => context.componentDB.components._map.get(id)), [context, equilibrium]);
 
   const {
     getTableProps,
@@ -136,9 +148,8 @@ const TotalConcentrationTable=React.memo(({currentResult, currentContext, style,
   )
 });
 
-const SolublilityProductTable=React.memo(({currentResult, currentContext, style, className}) => {
-
-  if(!currentResult.solidsNotPresent.size){
+const SolublilityProductTable=React.memo(({context, equilibrium, style, className}) => {
+  if(!equilibrium.species.solid?.notPresent?.length){
     return <></>;
   }
   
@@ -146,16 +157,16 @@ const SolublilityProductTable=React.memo(({currentResult, currentContext, style,
     {
       Header: "Solid",
       id: "name",
-      accessor: ([id, {db}]) => <FormattedChemicalCompound>{db.get(id).name}</FormattedChemicalCompound>
+      accessor: ({id, db}) => <FormattedChemicalCompound>{db.get(id).name}</FormattedChemicalCompound>
     },
     {
       Header: "Solubility Product",
       id: "solProd",
-      accessor: ([id, {solubilityProduct}]) => numberToExpWithTrailing(solubilityProduct, 4)
+      accessor: ({solubilityProduct}) => numberToExpWithTrailing(solubilityProduct, 4)
     },
   ], []);
 
-  const data=useMemo(() => Immutable.List(currentResult.solidsNotPresent.map(component => ({...component, db: currentContext.speciesDB.solids }))), [currentResult, currentContext]);
+  const data=useMemo(() => Immutable.List(equilibrium.species.solid.notPresent.map(({id, solubilityProduct}) => ({id, solubilityProduct, db: context.speciesDB.solids }))), [equilibrium, context]);
 
   const {
     getTableProps,
@@ -206,42 +217,54 @@ const ResultTables=React.memo((props) => {
   );
 });
 
-const ResultError=React.memo(({currentResult}) => {
-  return <>{"Error: "+currentResult.message}</>;
+const ResultError=React.memo(({error}) => {
+  return <>{"Error: "+error.toString()}</>;
+});
+
+const ResultErrors=React.memo(({errors}) => {
+  return (
+    <Row>
+      <h3>The Following Errors were found:</h3>
+      <p>{errors.map(error => <ResultError error={error}/>)}</p>
+    </Row>
+  )
 });
 
 
-const ResultPage = React.memo(({context}) => {
-  const currentResult=useSelector(state => getResult(state, {context}));
-  if(currentResult.name || currentResult instanceof Error){
-    return <ResultError currentContext={context} currentResult={currentResult}/>;
+const ResultPage = React.memo(({equilibrium}) => {
+  if(equilibrium.result===pending){
+    return <SpinnerComponentRow/>
   } else {
-    return <ResultTables currentContext={context} currentResult={currentResult}/>;
+    return (
+      <>
+        {equilibrium.result.equilibrium && <ResultTables context={equilibrium.context} equilibrium={equilibrium.result.equilibrium}/>}
+        {equilibrium.result.errors && <ResultErrors context={equilibrium.context} errors={equilibrium.result.errors}/>}
+      </>
+    )
   }
 });
 
 const Results = React.memo(({Footer, Body}) => {
   const windowSize=useWindowSize();
 
-  const calculations=useSelector(getCalculations);
-  const [pageNumber, setPageNumber]=useState(calculations.size-1);
+  const equilibria=useSelector(getEquilibria);
+  const [pageNumber, setPageNumber]=useState(equilibria.size-1);
 
   const lg=windowSize.width>=992;
   const sm=windowSize.width>=576;
-
   return (
     <>
       <Body>
-        <ResultPage context={calculations.get(pageNumber)}/>
+        <ResultPage equilibrium={equilibria.get(pageNumber)}/>
       </Body>
       <Footer>
         <Container fluid>
           <Row>
             <nav className="w-100">
               <ReactPaginate
-                initialPage={calculations.size-1}
+                initialPage={equilibria.size-1}
                 onPageChange={({selected}) => {setPageNumber(selected)}}
-                pageCount={calculations.size}
+                pageCount={equilibria.size}
                 previousLabel=
                 {
                   <>

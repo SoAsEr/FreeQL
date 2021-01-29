@@ -13,10 +13,12 @@ import { useTable } from 'react-table';
 import Table from 'react-bootstrap/Table';
 import is_number from 'is-number';
 import { useDispatch, useSelector } from 'react-redux';
-import { addLogKChange, getLogKChange, getSpeciesDB, getSpeciesPresent, removeLogKChange } from '../speciesSlice';
-import { getComponentDB, getComponentsAtEquilibrium, getComponentsConc, getComponentsPresent } from '../../components/componentsSlice';
+import { addLogKChange, removeLogKChange } from '../speciesSlice';
+import { getLogKChange, getSpeciesDB, getSpeciesPresent } from '../speciesSelectors';
+import { getComponentDB, getComponentsAtEquilibrium, getComponentsConc, getComponentsPresent } from '../../components/componentsSelectors';
 import EditDefault from '../../../reusable_components/EditDefault';
 import FormattedChemicalCompound from '../../../reusable_components/formatting/FormattedChemicalCompound.js';
+import { getGasReplacements } from '../gases/gasInputSlice.js';
 
 const LogKEditor=React.memo((props) => {
   const { dbLogK, specie, type} = props;
@@ -44,6 +46,7 @@ const TableauTable=React.memo((props) => {
   const componentsAtEquilibium=useSelector(getComponentsAtEquilibrium);
   const componentsConc=useSelector(getComponentsConc);
   const componentDB=useSelector(getComponentDB);
+  const gasReplacements=useSelector(getGasReplacements);
 
   const speciesPresent=useSelector(getSpeciesPresent);
   const speciesDB=useSelector(getSpeciesDB);
@@ -61,11 +64,11 @@ const TableauTable=React.memo((props) => {
   const dataColumns=useMemo(() => Immutable.List(componentsPresent).map(component => {
     return {
       Header: () => (<FormattedChemicalCompound>{componentDB.components.get(component).name}</FormattedChemicalCompound>),
-      Footer: () => componentsAtEquilibium.get(component) ? "TBC" : componentsConc.get(component) ?? "", 
+      Footer: () => componentsAtEquilibium.get(component) || gasReplacements.includes(component) ? "TBC" : componentsConc.get(component) ?? "", 
       id: component,
       accessor: ([specie, {components}]) => { return components.get(component) ?? 0},
     }
-  }), [componentsPresent, componentsAtEquilibium, componentsConc, componentDB]);
+  }), [componentsPresent, componentsAtEquilibium, componentsConc, gasReplacements, componentDB]);
   const logKColumn=useMemo(() => ({
     Header: "logK",
     Footer: "",

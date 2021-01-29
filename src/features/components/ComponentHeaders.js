@@ -12,7 +12,8 @@ import Select from 'react-select';
 import FormattedSupSub from '../../reusable_components/formatting/FormattedSupSub.js';
 
 import { createFormatOptionLabel } from '../../utils/react-select-utils.js';
-import { getHPlusOption, hPlusOptionChanged, hPlusOptions, getComponentDB } from './componentsSlice.js';
+import { getHPlusOption, getComponentDB } from './componentsSelectors.js';
+import { hPlusOptionChanged, hPlusOptions } from './componentsSlice.js';
 
 import { useDispatch, useSelector } from "react-redux";
 

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect} from "react";
+import React, { useState, useRef, useLayoutEffect } from "react";
 
 import Form from "react-bootstrap/Form";
 import ConstantValidationTextInput from "../utils/ConstantValidationTextInput";
@@ -10,7 +10,7 @@ const EditDefault = React.memo(({constantValidation, onSubmitValidation, onReset
 
   const editBoxRef=useRef();
 
-  useEffect(() => {
+  useLayoutEffect (() => {
     if(editing){
       editBoxRef.current.focus();
     }

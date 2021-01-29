@@ -1,0 +1,3 @@
+[submodule "public/solver/AQSystemSolver"]
+	path = public/solver/AQSystemSolver
+	url = git@github.com:FreeQL/AQSystemSolver.git

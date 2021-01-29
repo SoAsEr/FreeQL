@@ -1,12 +1,18 @@
 import * as Immutable from 'immutable';
 import is_number from 'is-number';
 
-import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 
 import {fetchComponentDB} from "../fetchDBs.js";
+import { removeComponentsWithSpecies } from '../common/actions.js';
 
 const addComponentsReducer=(state, components) => {
   state.present=state.present.union(components);
+  state.conc=state.conc.withMutations(conc => {
+    for(const component of components){
+      conc.set(component,null);
+    }
+  })
 };
 
 const removeComponentsReducer=(state, components) => {
@@ -29,8 +35,8 @@ const removeComponentsFromEquilibriumReducer=(state, component) => {
 const hPlusOptions={
   totalH: { value: "unique_1", label: 'totalH' },
   ph: { value: "unique_2", label: 'pH' },
-  alk: { value: "unique_3", label: 'Alkalinity^1' },
-  otherAlk: { value: "unique_4", label: 'Other Alkalinity' },
+  //alk: { value: "unique_3", label: 'Alkalinity^1' },
+  //otherAlk: { value: "unique_4", label: 'Other Alkalinity' },
 };
 
 const hPlusOptionChangedReducer=(state, val) => {
@@ -56,60 +62,12 @@ const initialState = {
   hPlusOption: hPlusOptions.totalH, 
 };
 
-const getComponentsPresent = (state) => state.components.present;
-const getComponentDB = (state) => state.components.componentDB;
-const getHPlusOption = (state) => state.components.hPlusOption;
-const getWaterValue = (state) => getComponentDB(state).waterValue;
-
-const getComponentsConc = createSelector(
-  [
-    (state) => state.components.conc,
-    getComponentDB,
-    getHPlusOption,
-  ],
-  (concs, componentDB, hPlusOption) => {
-    if(hPlusOption===hPlusOptions.ph){
-      return concs.update(componentDB.hPlusValue, ph => is_number(ph) ? Math.pow(10, -ph) : ph);
-    } else {
-      return concs;
-    }
-  }
-);
-
-const getComponentsAtEquilibrium = createSelector(
-  [
-    (state) => state.components.atEquilibrium,
-    getComponentDB,
-    getHPlusOption,
-  ],
-  (equilComponents, componentDB, hPlusOption) => {
-    if(hPlusOption===hPlusOptions.ph) {
-      return equilComponents.add(componentDB.hPlusValue);
-    } else {
-      return equilComponents;
-    }
-  }
-);
-
-const isComponentAtEquilibrium=createSelector(
-  [
-    getComponentsAtEquilibrium,
-    (state, {component}) => component,
-  ],
-  (componentsAtEquilibrium, component) => componentsAtEquilibrium.has(component)
-);
-
-
-
 const componentsSlice= createSlice({
   name: "components",
   initialState,
   reducers: {
     addComponents: (state, action) => {
       addComponentsReducer(state, action.payload)
-    },
-    removeComponents: (state, action) => {
-      removeComponentsReducer(state, action.payload)
     },
     componentValueChanged: (state, action) => {
       setComponentConcReducer(state, action.payload.component, action.payload.value)
@@ -134,11 +92,13 @@ const componentsSlice= createSlice({
         state.componentDB=db;
         addComponentsReducer(state, [db.hPlusValue]);
       })
+      .addCase(removeComponentsWithSpecies, (state, action) => {
+        removeComponentsReducer(state, action.payload.components)
+      })
   }
 });
 
-export const { addComponents, removeComponents, componentValueChanged, putComponentsAtEquilibrium, removeComponentsFromEquilibrium, hPlusOptionChanged } = componentsSlice.actions;
-export { getComponentsPresent, getComponentsConc, getComponentsAtEquilibrium, getWaterValue, isComponentAtEquilibrium, getComponentDB, getHPlusOption }
+export const { addComponents, componentValueChanged, putComponentsAtEquilibrium, removeComponentsFromEquilibrium, hPlusOptionChanged } = componentsSlice.actions;
 export { getNewComponentDB };
 export { hPlusOptions };
 export default componentsSlice.reducer;

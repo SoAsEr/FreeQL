@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getComponentDB, getWaterValue } from '../../components/componentsSlice.js';
-import { getErroredGases, getGasReplacements, removeEnabledGas, setGasPartialPressure, setGasReplacement } from './gasInputSlice.js';
-import { disableSpecies, getSpeciesDB, getSpeciesPresent } from '../speciesSlice.js';
+import { getComponentDB, getWaterValue } from '../../components/componentsSelectors.js';
+import { getErroredGases, getGasReplacements, setGasPartialPressure, setGasReplacement } from './gasInputSlice.js';
+import { getSpeciesDB, getSpeciesPresent } from '../speciesSelectors.js';
+import { disableSpecies } from "../speciesSlice.js"
 import DataRow from '../../../reusable_components/DataRow.js';
 import RadioRow from '../../../reusable_components/RadioRow.js';
 import AbbreviatingLabel from '../../../reusable_components/AbbreviatingLabel.js';
@@ -18,12 +19,6 @@ const GasListItem=React.memo(({gas}) => {
   const isErrored=useSelector(state => getErroredGases(state).has(gas));
 
   const dispatch=useDispatch();
-
-  useEffect(() => {
-    dispatch(setGasReplacement({gas, component: null}));
-    dispatch(setGasPartialPressure({gas, value: null}));
-    return () => {dispatch(removeEnabledGas({gas}));}
-  }, [gas, dispatch]);
 
   return (
     <>

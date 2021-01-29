@@ -1,12 +1,14 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 
 import DataRow from "../../reusable_components/DataRow.js";
 
 import { useSelector, useDispatch } from "react-redux";
-import { componentValueChanged, getComponentDB, getComponentsPresent, getComponentsAtEquilibrium, putComponentsAtEquilibrium, removeComponentsFromEquilibrium, removeComponents } from './componentsSlice.js';
+import { getComponentDB, getComponentsPresent, getComponentsAtEquilibrium } from './componentsSelectors.js';
+import { componentValueChanged, putComponentsAtEquilibrium, removeComponentsFromEquilibrium } from './componentsSlice.js';
 import ListHeader from '../../reusable_components/ListHeader.js';
 import AbbreviatingLabel from '../../reusable_components/AbbreviatingLabel.js';
 import { getComponentToGases } from '../species/gases/gasInputSlice.js';
+import { removeComponents } from '../common/actions.js';
 
 
 const ComponentRow=React.memo(({component, disableCheck}) => {
@@ -15,10 +17,6 @@ const ComponentRow=React.memo(({component, disableCheck}) => {
   const replacedByGas = useSelector(state => getComponentToGases(state).has(component));
 
   const dispatch = useDispatch();
-  
-  useEffect(() => {
-    dispatch(componentValueChanged({component, value: ""}));
-  }, [component, dispatch]);
 
   return(
     <DataRow

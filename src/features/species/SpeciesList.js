@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 
 import CenteringDiv from '../../utils/CenteringDiv.js';
 import FormattedChemicalCompound from '../../reusable_components/formatting/FormattedChemicalCompound.js';
@@ -9,8 +9,9 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { disableSpecies, enableSpecies, getSpeciesCouldBePresent, getSpeciesDB, getIfSpecieEnabled } from './speciesSlice.js';
-import { getComponentDB, getComponentsPresent } from '../components/componentsSlice.js';
+import { disableSpecies, enableSpecies } from './speciesSlice.js';
+import { getSpeciesCouldBePresent, getSpeciesDB, getIfSpecieEnabled } from './speciesSelectors.js';
+import { getComponentDB, getComponentsPresent } from '../components/componentsSelectors.js';
 
 const CheckListItem=React.memo((props) => {
   const {label, enabled, onEnable}=props;
@@ -31,12 +32,6 @@ const SpeciesListItem=React.memo(({specie, type}) => {
   const enabled=useSelector(state => getIfSpecieEnabled(state, {specie, type}));
   const speciesDB=useSelector(getSpeciesDB);
   const dispatch=useDispatch();
-  useEffect(() => {
-    if(type==="aqs") {
-      dispatch(enableSpecies({type, species: [specie]}))
-    }
-    return () => dispatch(disableSpecies({type, species: [specie]}));
-  }, [type, specie, dispatch])
   return (
     <CheckListItem
       label={
@@ -45,9 +40,9 @@ const SpeciesListItem=React.memo(({specie, type}) => {
       enabled={enabled}
       onEnable={(e) => {
         if(e.target.checked) {
-          dispatch(enableSpecies({type, species: [specie]}))
+          dispatch(enableSpecies({[type]: [specie]}))
         } else {
-          dispatch(disableSpecies({type, species: [specie]}))
+          dispatch(disableSpecies({[type]: [specie]}))
         }
       }} 
     />

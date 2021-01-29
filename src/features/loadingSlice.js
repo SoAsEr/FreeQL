@@ -1,6 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { getNewComponentDB } from './components/componentsSlice.js';
-import { calculateNewResult } from './result/resultsSlice.js';
 import { getNewSpeciesDB } from './species/speciesSlice.js';
 
 const pending="pending";
@@ -15,7 +14,6 @@ const getNameFromAsyncThunk=(thunk) => thunk.pending.type.substring(0, thunk.pen
 const actionToName={
   [getNameFromAsyncThunk(getNewComponentDB)] : "componentDB",
   [getNameFromAsyncThunk(getNewSpeciesDB)] : "speciesDB",
-  [getNameFromAsyncThunk(calculateNewResult)] : "calculateResult",
 }
 
 const loadingSlice=createSlice({
@@ -23,7 +21,6 @@ const loadingSlice=createSlice({
   initialState: {
     componentDB: pending,
     speciesDB: pending,
-    calculateResult: fulfilled,
   },
   extraReducers: builder => {
     builder
@@ -32,12 +29,6 @@ const loadingSlice=createSlice({
       })
   }
 });
-
-const getComponentDBLoadingState=(state) => state.loading.componentDB;
-const getSpeciesDBLoadingState=(state) => state.loading.speciesDB;
-const getCalculateResultLoadingState=(state) => state.loading.calculateResult;
-
-export {getComponentDBLoadingState, getSpeciesDBLoadingState, getCalculateResultLoadingState};
 export {pending, fulfilled, rejected};
 
 export default loadingSlice.reducer;

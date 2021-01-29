@@ -4,17 +4,19 @@ import is_number from "is-number";
 import { useDispatch, useSelector } from "react-redux";
 import { createSelector } from "reselect";
 import TooltipButton from "../../reusable_components/TooltipButton";
-import { getComponentsConc } from "../components/componentsSlice";
-import { calculateNewResult, getCurrentContext } from "./resultsSlice";
+import { getComponentsConc } from "../components/componentsSelectors";
+import {calculateEquilibrium, getCurrentCalculationArguments } from "./equilibriaSlice";
 import { getComponentToGases, getErroredGases, getGasReplacements, getPartialPressures } from "../species/gases/gasInputSlice";
 import ReduxSuspense from "../../utils/ReduxSuspense";
+import { getSpeciesPresent } from "../species/speciesSelectors";
 
 const message=createSelector(
-  [getErroredGases, getGasReplacements, getComponentsConc, getComponentToGases, getPartialPressures],
-  (erroredGases, gasReplacements, componentsConc, componentToGases, partialPressures) => { 
+  [getErroredGases, getGasReplacements, getComponentsConc, getComponentToGases, getPartialPressures, getSpeciesPresent],
+  (erroredGases, gasReplacements, componentsConc, componentToGases, partialPressures, speciesPresent) => { 
+    console.log(gasReplacements);
     if (erroredGases.size>0) {
       return "Two gases are replacing the same component";
-    } else if (gasReplacements.some(val => !val)) {
+    } else if (!speciesPresent.gases.every((gas) => gasReplacements.get(gas))) {
       return "You have not selected a replacement for at least one gas";
     } else if(componentsConc.deleteAll(componentToGases.keys()).some(conc => !is_number(conc))) {
       return "At least one component is empty or invalid";
@@ -40,13 +42,13 @@ const DisabledCalculateButton=React.memo(({disableMessage, ...otherProps}) => {
 })
 const EnabledCalculateButton=React.memo(({onClick, ...otherProps}) => {
   const dispatch=useDispatch()
-  const context=useSelector(getCurrentContext);
+  const context=useSelector(getCurrentCalculationArguments);
 
   return (
     <TooltipButton 
       onClick={(e) => {
         onClick(e);
-        dispatch(calculateNewResult(context))
+        dispatch(calculateEquilibrium(context))
       }} 
       children={"Calculate"} 
       {...otherProps} 
@@ -71,9 +73,7 @@ const CalculateButtonInternal=React.memo(({onClick, ...otherProps}) => {
 const CalculateButton=React.memo((props) => {
   return (
     <ReduxSuspense fallback={<DisabledCalculateButton message="Getting Database..." {...props}/>} subscribedItems={["componentDB", "speciesDB"]}>
-      <ReduxSuspense fallback={<DisabledCalculateButton message="Calculating..." {...props}/>} subscribedItems={["results"]}>
-        <CalculateButtonInternal {...props} />
-      </ReduxSuspense>
+      <CalculateButtonInternal {...props} />
     </ReduxSuspense>
   )
 });

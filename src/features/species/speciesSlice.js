@@ -1,18 +1,31 @@
 import * as Immutable from 'immutable';
 
-import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit'
-import { getComponentsPresent, getWaterValue } from '../components/componentsSlice.js';
-import { createStructuredSelector } from 'reselect';
-import { createDiffSelector } from '../../utils/createDiffSelector.js';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+
 import { fetchSpeciesDB } from '../fetchDBs.js';
 
-const indexSort=(db) => (specie) => db.get(specie).index;
+import { removeComponentsWithSpecies } from '../common/actions.js';
 
-const enableSpeciesReducer=(state, type, species) => {
-  state.speciesEnabled[type]=state.speciesEnabled[type].union(species);
+
+const enableSpeciesOfTypeReducer=(state, type, species) => {
+  if(!species){
+    return;
+  }
+  state.speciesEnabled[type].map=state.speciesEnabled[type].map.withMutations(speciesEnabled => {
+    for(const specie of species){
+      speciesEnabled.set(specie, true);
+    }
+  });
 }
-const disableSpeciesReducer=(state, type, species) => {
-  state.speciesEnabled[type]=state.speciesEnabled[type].subtract(species);
+const disableSpeciesOfTypeReducer=(state, type, species) => {
+  if(!species){
+    return;
+  }
+  state.speciesEnabled[type].map=state.speciesEnabled[type].map.withMutations(speciesEnabled => {
+    for(const specie of species){
+      speciesEnabled.set(specie, false);
+    }
+  });
 }
 
 const addLogKChangeReducer=(state, type, specie, value) => {
@@ -23,6 +36,7 @@ const removeLogKChangeReducer=(state, type, specie) => {
   state.logKChanges[type]=state.logKChanges[type].delete(specie);
 }
 
+
 const getNewSpeciesDB=createAsyncThunk(
   "getNewSpeciesDB",
   async (args, thunkAPI) => {
@@ -32,9 +46,9 @@ const getNewSpeciesDB=createAsyncThunk(
 
 const initialState={
   speciesEnabled: {
-    aqs: Immutable.Set(),
-    solids: Immutable.Set(),
-    gases: Immutable.Set(),
+    aqs: {map: Immutable.Map(), default: true},
+    solids: {map: Immutable.Map(), default: false},
+    gases: {map: Immutable.Map(), default: false},
   },
   logKChanges: {
     aqs: Immutable.Map(),
@@ -48,90 +62,26 @@ const initialState={
   }
 };
 
-const getSpeciesDB=(state) => state.species.speciesDB;
-
-const getComponentsToSpeciesOfTypeFactory= (type) => createSelector(
-  [getSpeciesDB],
-  (speciesDB) => {
-    return Immutable.Map().withMutations(componentToSpecies => {
-      for(const [speciesId, {components}] of speciesDB[type]) {
-        for(const [component] of components) {
-          componentToSpecies.update(component, (oldSet=Immutable.Set()) => oldSet.add(speciesId));
-        }
-      }
-    });
-  }
-)
-
-const getSpeciesPresent=(state) => state.species.speciesEnabled;
-
-const getSpeciesOfTypeFactory=(type) => (state) => state.species.speciesDB[type];
-
-const getSpeciesCouldBePresentOfTypeFactory=(type) => createDiffSelector(
-  [getComponentsPresent, getSpeciesOfTypeFactory(type), getComponentsToSpeciesOfTypeFactory(type), getWaterValue], //deps
-  {speciesOccurences: Immutable.Map(), speciesCouldBePresent: Immutable.OrderedSet()}, //initial of reducer
-  ({speciesOccurences, speciesCouldBePresent}, componentToAdd, speciesOfType, componentToSpeciesOfType, waterValue) => {  //addReducer
-    let newSpeciesOccurences;
-    let newSpeciesCouldBePresent;
-    newSpeciesOccurences=speciesOccurences.withMutations(speciesOccurences => {
-      newSpeciesCouldBePresent=speciesCouldBePresent.withMutations(speciesCouldBePresent => {
-        for(const specie of componentToSpeciesOfType.get(componentToAdd) ?? []) {
-          speciesOccurences.update(specie, (num=0)=>num+1);
-          if(speciesOfType.get(specie).components.delete(waterValue).size===speciesOccurences.get(specie)){
-            speciesCouldBePresent.add(specie);
-          }
-        }
-      })
-    })
-    return {speciesOccurences: newSpeciesOccurences, speciesCouldBePresent: newSpeciesCouldBePresent};
-  },
-  ({speciesOccurences, speciesCouldBePresent}, componentToRemove, speciesOfType, componentToSpeciesOfType) => {  //removeReducer
-    let newSpeciesOccurences;
-    let newSpeciesCouldBePresent;
-    newSpeciesOccurences=speciesOccurences.withMutations(speciesOccurences => {
-      newSpeciesCouldBePresent=speciesCouldBePresent.withMutations(speciesCouldBePresent => {
-        for(const specie of componentToSpeciesOfType.get(componentToRemove) ?? []) {
-          speciesOccurences.update(specie, (num=0)=>num-1);
-          speciesCouldBePresent.remove(specie);
-        }
-      })
-    })
-    return {speciesOccurences: newSpeciesOccurences, speciesCouldBePresent: newSpeciesCouldBePresent};
-  },
-  ({speciesCouldBePresent}, speciesOfType) => speciesCouldBePresent.sortBy(indexSort(speciesOfType)) //final function
-);
-
-const speciesFactoryFactory=(typeFactory) => createStructuredSelector({
-  aqs: typeFactory("aqs"),
-  solids: typeFactory("solids"),
-  gases: typeFactory("gases"),
-})
-
-const getSpeciesCouldBePresent=speciesFactoryFactory(getSpeciesCouldBePresentOfTypeFactory);
-
-
-const getLogKChanges=(state) => state.species.logKChanges;
-const getLogKChange=(state, {type, specie}) => state.species.logKChanges[type].get(specie);
-
-
-const getIfSpecieEnabled=(state, {type, specie}) => state.species.speciesEnabled[type].has(specie);
-
 
 const speciesSlice=createSlice({
   name: "species",
   initialState,
   reducers: {
     enableSpecies: (state, action) => {
-      state=enableSpeciesReducer(state, action.payload.type, action.payload.species);
+      enableSpeciesOfTypeReducer(state, "aqs", action.payload.aqs);
+      enableSpeciesOfTypeReducer(state, "solids", action.payload.solids);
+      enableSpeciesOfTypeReducer(state, "gases", action.payload.gases);
     },
     disableSpecies: (state, action) => {
-      state=disableSpeciesReducer(state, action.payload.type, action.payload.species);
+      disableSpeciesOfTypeReducer(state, "aqs", action.payload.aqs);
+      disableSpeciesOfTypeReducer(state, "solids", action.payload.solids);
+      disableSpeciesOfTypeReducer(state, "gases", action.payload.gases);
     },
     addLogKChange: (state, action) => {
-      state=addLogKChangeReducer(state, action.payload.type, action.payload.specie, action.payload.value);
+      addLogKChangeReducer(state, action.payload.type, action.payload.specie, action.payload.value);
     },
     removeLogKChange: (state, action) => {
-      state=removeLogKChangeReducer(state, action.payload.type, action.payload.specie);
+      removeLogKChangeReducer(state, action.payload.type, action.payload.specie);
     }
   },
   extraReducers: (builder) => {
@@ -143,10 +93,15 @@ const speciesSlice=createSlice({
       const db = action.payload;
       state.speciesDB = db;
     })
+    .addCase(removeComponentsWithSpecies, (state, action) => {
+      state.speciesEnabled.aqs.map=state.speciesEnabled.aqs.map.deleteAll(action.payload.species.aqs);
+      state.speciesEnabled.solids.map=state.speciesEnabled.solids.map.deleteAll(action.payload.species.solids);
+      state.speciesEnabled.gases.map=state.speciesEnabled.gases.map.deleteAll(action.payload.species.gases);
+    })
   },
 });
 
+
 export const { enableSpecies, disableSpecies, addLogKChange, removeLogKChange } = speciesSlice.actions;
-export { getSpeciesCouldBePresent, getSpeciesPresent, getSpeciesDB, getLogKChanges, getIfSpecieEnabled, getLogKChange };
 export { getNewSpeciesDB };
 export default speciesSlice.reducer;

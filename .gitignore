@@ -10,6 +10,9 @@
 
 # production
 /build
+/public/static/js/*
+!/public/static/js/build.sh
+!/public/static/js/build.js
 
 # misc
 .DS_Store

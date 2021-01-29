@@ -12,7 +12,8 @@ import FormattedChemicalCompound from "../../reusable_components/formatting/Form
 
 import { useDispatch, useSelector } from "react-redux";
 import StagedAdder from '../../reusable_components/StagedAdder.js';
-import { addComponents, getComponentDB } from './componentsSlice.js';
+import {getComponentDB } from './componentsSelectors.js';
+import { addComponents } from './componentsSlice.js';
 
 
 const ComponentSelectModal=React.memo(({show, close, windowHeight}) => {

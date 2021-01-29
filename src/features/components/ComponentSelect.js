@@ -10,10 +10,11 @@ import { createFormatOptionLabel } from '../../utils/react-select-utils.js';
 import FormattedChemicalCompound from "../../reusable_components/formatting/FormattedChemicalCompound.js";
 
 import { useDispatch, useSelector } from "react-redux";
-import { addComponents, getComponentDB, getComponentsPresent } from './componentsSlice.js';
+import { getComponentDB, getComponentsPresent } from './componentsSelectors.js';
+import { addComponents } from './componentsSlice.js';
 
 
-const ComponentSelect=() => {  
+const ComponentSelect=React.forwardRef((props, ref) => {  
   const dispatch=useDispatch();
   const componentsPresent=useSelector(getComponentsPresent);
   const componentDB=useSelector(getComponentDB);
@@ -26,11 +27,14 @@ const ComponentSelect=() => {
 
   return(
     <VirtualizedSelect
+      ref={ref}
+      menuPosition="fixed"
       options={availableComponents}
       filterOption={(option, searchValue) => searchFilter(option.value, searchValue)}
       formatOptionLabel={createFormatOptionLabel(FormattedChemicalCompound)}
-      onChange={useCallback((e) => {if(e) {dispatch(addComponents([e.value]))}}, [dispatch])} value=""/>
+      onChange={useCallback((e) => {if(e) {dispatch(addComponents([e.value]))}}, [dispatch])} value=""
+    />
   )
-};
+});
 
 export default ComponentSelect;
