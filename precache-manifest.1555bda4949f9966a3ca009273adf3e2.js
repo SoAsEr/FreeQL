@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "0791ee501f175b8178c99443b6fd2bed",
+    "revision": "1bd58cc4e1170c8d473576457fc2dd0f",
     "url": "/FreeQL/index.html"
   },
   {
@@ -16,8 +16,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/FreeQL/static/js/0.819b4cef.chunk.js"
   },
   {
-    "revision": "4a019a23271199f30fbf",
-    "url": "/FreeQL/static/js/10.4a1e83c7.chunk.js"
+    "revision": "283d98361d3f06df899b",
+    "url": "/FreeQL/static/js/10.08640e40.chunk.js"
   },
   {
     "revision": "20209488642d319490d6",
@@ -84,7 +84,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/FreeQL/static/js/main.dfc4aebd.chunk.js"
   },
   {
-    "revision": "6368c6f9dcdbf230652d",
-    "url": "/FreeQL/static/js/runtime-main.1269e298.js"
+    "revision": "840a9e26ffd819a01da2",
+    "url": "/FreeQL/static/js/runtime-main.79bb033e.js"
   }
 ]);
