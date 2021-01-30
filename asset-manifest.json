@@ -3,10 +3,10 @@
     "static/js/0.9c223886.chunk.js": "/FreeQL/static/js/0.9c223886.chunk.js",
     "static/js/0.9c223886.chunk.js.map": "/FreeQL/static/js/0.9c223886.chunk.js.map",
     "main.css": "/FreeQL/static/css/main.a95c39c5.chunk.css",
-    "main.js": "/FreeQL/static/js/main.3e933a23.chunk.js",
-    "main.js.map": "/FreeQL/static/js/main.3e933a23.chunk.js.map",
-    "runtime-main.js": "/FreeQL/static/js/runtime-main.069afd7c.js",
-    "runtime-main.js.map": "/FreeQL/static/js/runtime-main.069afd7c.js.map",
+    "main.js": "/FreeQL/static/js/main.35d6526d.chunk.js",
+    "main.js.map": "/FreeQL/static/js/main.35d6526d.chunk.js.map",
+    "runtime-main.js": "/FreeQL/static/js/runtime-main.5390fd0d.js",
+    "runtime-main.js.map": "/FreeQL/static/js/runtime-main.5390fd0d.js.map",
     "static/js/3.e675e652.chunk.js": "/FreeQL/static/js/3.e675e652.chunk.js",
     "static/js/3.e675e652.chunk.js.map": "/FreeQL/static/js/3.e675e652.chunk.js.map",
     "static/js/4.cf346ad3.chunk.js": "/FreeQL/static/js/4.cf346ad3.chunk.js",
@@ -34,10 +34,10 @@
     "static/js/14.e41caf96.chunk.js.map": "/FreeQL/static/js/14.e41caf96.chunk.js.map",
     "static/js/15.3e536d5f.chunk.js": "/FreeQL/static/js/15.3e536d5f.chunk.js",
     "static/js/15.3e536d5f.chunk.js.map": "/FreeQL/static/js/15.3e536d5f.chunk.js.map",
-    "static/js/16.4ebaa0bb.chunk.js": "/FreeQL/static/js/16.4ebaa0bb.chunk.js",
-    "static/js/16.4ebaa0bb.chunk.js.map": "/FreeQL/static/js/16.4ebaa0bb.chunk.js.map",
+    "static/js/16.ce18b4b3.chunk.js": "/FreeQL/static/js/16.ce18b4b3.chunk.js",
+    "static/js/16.ce18b4b3.chunk.js.map": "/FreeQL/static/js/16.ce18b4b3.chunk.js.map",
     "index.html": "/FreeQL/index.html",
-    "precache-manifest.4e713d140c8152c8c6c7852c0a9a9a76.js": "/FreeQL/precache-manifest.4e713d140c8152c8c6c7852c0a9a9a76.js",
+    "precache-manifest.506e9623951914f70a504936a41c97d0.js": "/FreeQL/precache-manifest.506e9623951914f70a504936a41c97d0.js",
     "service-worker.js": "/FreeQL/service-worker.js",
     "static/css/6.6db69bf1.chunk.css.map": "/FreeQL/static/css/6.6db69bf1.chunk.css.map",
     "static/css/main.a95c39c5.chunk.css.map": "/FreeQL/static/css/main.a95c39c5.chunk.css.map",
@@ -46,9 +46,9 @@
     "static/js/CalculateEquilibriumWorker.4a2b4452.worker.js.map": "/FreeQL/static/js/CalculateEquilibriumWorker.4a2b4452.worker.js.map"
   },
   "entrypoints": [
-    "static/js/runtime-main.069afd7c.js",
+    "static/js/runtime-main.5390fd0d.js",
     "static/js/3.e675e652.chunk.js",
     "static/css/main.a95c39c5.chunk.css",
-    "static/js/main.3e933a23.chunk.js"
+    "static/js/main.35d6526d.chunk.js"
   ]
 }

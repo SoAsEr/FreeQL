@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "a1323a2e1753f2e265cebcf6ff3d92c5",
+    "revision": "b778fcbbec941de9e0dbd6640e12c7cd",
     "url": "/FreeQL/index.html"
   },
   {
@@ -8,7 +8,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/FreeQL/static/css/6.6db69bf1.chunk.css"
   },
   {
-    "revision": "bd57373a67634ce9952c",
+    "revision": "45d643fbd4f01f666b76",
     "url": "/FreeQL/static/css/main.a95c39c5.chunk.css"
   },
   {
@@ -40,8 +40,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/FreeQL/static/js/15.3e536d5f.chunk.js"
   },
   {
-    "revision": "455e41adb81f23cac71e",
-    "url": "/FreeQL/static/js/16.4ebaa0bb.chunk.js"
+    "revision": "f88fd647bd5de46db9d4",
+    "url": "/FreeQL/static/js/16.ce18b4b3.chunk.js"
   },
   {
     "revision": "9d1e9f94ff805084cd9c",
@@ -80,11 +80,11 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/FreeQL/static/js/CalculateEquilibriumWorker.4a2b4452.worker.js"
   },
   {
-    "revision": "bd57373a67634ce9952c",
-    "url": "/FreeQL/static/js/main.3e933a23.chunk.js"
+    "revision": "45d643fbd4f01f666b76",
+    "url": "/FreeQL/static/js/main.35d6526d.chunk.js"
   },
   {
-    "revision": "97e5f063d63a855108fe",
-    "url": "/FreeQL/static/js/runtime-main.069afd7c.js"
+    "revision": "a723bd1fb4861dedb0ad",
+    "url": "/FreeQL/static/js/runtime-main.5390fd0d.js"
   }
 ]);
