@@ -64,6 +64,7 @@ const ComponentListItem=React.memo(({component}) => {
 const SpeciesListGroup=React.memo(() => { 
   const componentsPresent=useSelector(getComponentsPresent);
   const speciesCouldBePresent=useSelector(getSpeciesCouldBePresent);
+  const speciesDB=useSelector(getSpeciesDB);
   return(
     <ListGroup>
       {componentsPresent
@@ -76,7 +77,7 @@ const SpeciesListGroup=React.memo(() => {
         )
       }
       {
-        speciesCouldBePresent.aqs
+        speciesCouldBePresent.aqs.sortBy(specie => speciesDB.aqs.get(specie).index)
           .map((specie) => 
             <SpeciesListItem 
             key={specie} 
@@ -87,7 +88,7 @@ const SpeciesListGroup=React.memo(() => {
         )
       }
       {
-        speciesCouldBePresent.solids
+        speciesCouldBePresent.solids.sortBy(specie => speciesDB.solids.get(specie).index)
           .map((specie) => 
             <SpeciesListItem 
             key={specie} 
@@ -98,7 +99,7 @@ const SpeciesListGroup=React.memo(() => {
         )
       }
       {
-        speciesCouldBePresent.gases
+        speciesCouldBePresent.gases.sortBy(specie => speciesDB.gases.get(specie).index)
           .map((specie) => 
             <SpeciesListItem 
             key={specie} 

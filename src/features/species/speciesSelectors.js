@@ -56,7 +56,7 @@ const getSpeciesCouldBePresentOfTypeFactory=memoize((type) => createDiffSelector
     })
     return {speciesOccurences: newSpeciesOccurences, speciesCouldBePresent: newSpeciesCouldBePresent};
   },
-  ({speciesCouldBePresent}, speciesOfType) => speciesCouldBePresent.sortBy(indexSort(speciesOfType)) //final function
+  ({speciesCouldBePresent}) => speciesCouldBePresent //final function
 ));
 
 const getSpeciesPresentOfTypeFactory=memoize((type) => createSelector(
