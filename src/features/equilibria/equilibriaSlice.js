@@ -4,11 +4,11 @@ import { createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit"
 //eslint-disable-next-line import/no-webpack-loader-syntax
 import ConcentrationCalculator from 'worker-loader!./CalculateEquilibriumWorker.js'
 import { getComponentDB, getComponentsAtEquilibrium, getComponentsConc } from '../components/componentsSelectors';
-import { getLogKChanges, getSpeciesDB, getSpeciesPresent } from '../species/speciesSelectors';
+import { getLogKChanges, getSpeciesCouldBePresent, getSpeciesDB, getSpeciesPresent } from '../species/speciesSelectors';
 
 import * as Comlink from "comlink";
 import { createStructuredSelector } from 'reselect';
-import { pending } from '../loadingSlice';
+import { pending } from '../loading/loadingSlice';
 import update from "immutability-helper";
 import { getGasReplacements, getPartialPressures } from '../species/gases/gasInputSlice';
 
@@ -18,6 +18,7 @@ const getCurrentCalculationArguments=createStructuredSelector(
     componentsConc: getComponentsConc,
     componentsAtEquilibrium: getComponentsAtEquilibrium,
     speciesPresent: getSpeciesPresent,
+    speciesCouldBePresent: getSpeciesCouldBePresent,
     logKChanges: getLogKChanges,
     speciesDB: getSpeciesDB,
     componentDB: getComponentDB,
@@ -65,7 +66,7 @@ const calculateEquilibriumWorker=Comlink.wrap(new ConcentrationCalculator());
 const calculateEquilibrium=createAsyncThunk(
   "calculateEquilibrium",
   async (context) => {
-    const {componentsConc, componentsAtEquilibrium, speciesPresent, logKChanges, speciesDB, partialPressures, gasReplacements, componentDB}=context;
+    const {componentsConc, componentsAtEquilibrium, speciesPresent, speciesCouldBePresent, logKChanges, speciesDB, partialPressures, gasReplacements, componentDB}=context;
     console.log(context);
     const args={
       query: calculateEquilibriumQuery,
@@ -76,6 +77,7 @@ const calculateEquilibrium=createAsyncThunk(
         aqueousSpecies: Array.from(speciesPresent.aqs).map(specie => ({id: specie, row: {constant: Math.pow(10, logKChanges.aqs.get(specie) ?? speciesDB.aqs.get(specie).logK), coefficients: Array.from(speciesDB.aqs.get(specie).components).map(([component, amt]) => ({componentId: component, coefficient: amt}))}})),
         solidsCouldBePresent: Array.from(speciesPresent.solids).map(specie => ({id: specie, row: {constant: Math.pow(10, logKChanges.solids.get(specie) ?? speciesDB.solids.get(specie).logK), coefficients: Array.from(speciesDB.solids.get(specie).components).map(([component, amt]) => ({componentId: component, coefficient: amt}))}})),
         gases: Array.from(speciesPresent.gases).map(specie => ({id: specie, partialPressure: partialPressures.get(specie), componentReplacing: gasReplacements.get(specie), row: {constant: Math.pow(10, logKChanges.gases.get(specie) ?? speciesDB.gases.get(specie).logK), coefficients: Array.from(speciesDB.gases.get(specie).components).map(([component, amt]) => ({componentId: component, coefficient: amt}))}})),
+        extraSolubilityProductsToCheck: Array.from(speciesCouldBePresent.solids.filter(solid => !speciesPresent.solids.has(solid))).map(specie => ({id: specie, row: {constant: Math.pow(10, logKChanges.solids.get(specie) ?? speciesDB.solids.get(specie).logK), coefficients: Array.from(speciesDB.solids.get(specie).components).map(([component, amt]) => ({componentId: component, coefficient: amt}))}})),
       }
     };
     const ret=await calculateEquilibriumWorker(

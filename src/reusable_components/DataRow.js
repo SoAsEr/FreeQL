@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 
-import ConstantValidationTextInput from '../utils/ConstantValidationTextInput.js';
+import ConstantValidationTextInput from './ConstantValidationTextInput.js';
 
 import FormattedChemicalCompound from './formatting/FormattedChemicalCompound.js';
 

@@ -14,7 +14,7 @@ import Collapse from 'react-bootstrap/Collapse';
 
 import useModalStack from './utils/useModalStack.js';
 import CalculateButton from './features/equilibria/CalculateButton';
-import ReduxSuspense from './utils/ReduxSuspense';
+import ReduxSuspense from './features/loading/ReduxSuspense';
 import { getNewComponentDB } from './features/components/componentsSlice';
 import { getNewSpeciesDB } from './features/species/speciesSlice';
 

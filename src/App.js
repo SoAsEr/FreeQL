@@ -8,7 +8,7 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
-import CenteringDiv from './utils/CenteringDiv.js';
+import CenteringDiv from './reusable_components/CenteringDiv.js';
 import useWindowSize from './utils/useWindowSize.js';
 
 const FreeQL = React.lazy(() => import("./FreeQL.js"));

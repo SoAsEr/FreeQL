@@ -1,6 +1,6 @@
 import React from 'react';
 
-import CenteringDiv from '../../utils/CenteringDiv.js';
+import CenteringDiv from '../../reusable_components/CenteringDiv.js';
 import FormattedChemicalCompound from '../../reusable_components/formatting/FormattedChemicalCompound.js';
 
 import ListGroup from 'react-bootstrap/ListGroup';

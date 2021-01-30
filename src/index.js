@@ -5,7 +5,7 @@ import App from './App';
 import * as serviceWorker from './serviceWorker';
 
 import components from "./features/components/componentsSlice.js";
-import loading from "./features/loadingSlice.js";
+import loading from "./features/loading/loadingSlice.js";
 import species from "./features/species/speciesSlice.js";
 import gasInput from "./features/species/gases/gasInputSlice.js";
 import equilibria from "./features/equilibria/equilibriaSlice.js";

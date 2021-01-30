@@ -7,7 +7,7 @@ import TooltipButton from "../../reusable_components/TooltipButton";
 import { getComponentsConc } from "../components/componentsSelectors";
 import {calculateEquilibrium, getCurrentCalculationArguments } from "./equilibriaSlice";
 import { getComponentToGases, getErroredGases, getGasReplacements, getPartialPressures } from "../species/gases/gasInputSlice";
-import ReduxSuspense from "../../utils/ReduxSuspense";
+import ReduxSuspense from "../loading/ReduxSuspense";
 import { getSpeciesPresent } from "../species/speciesSelectors";
 
 const message=createSelector(

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useLayoutEffect } from "react";
 
 import Form from "react-bootstrap/Form";
-import ConstantValidationTextInput from "../utils/ConstantValidationTextInput";
+import ConstantValidationTextInput from "./ConstantValidationTextInput";
 
 const EditDefault = React.memo(({constantValidation, onSubmitValidation, onResetToDefault, onEdit, defaultValue, changedValue }) => {
   const showDefault = !changedValue;

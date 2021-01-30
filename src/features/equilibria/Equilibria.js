@@ -1,8 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import * as Immutable from "immutable";
-import { useTable } from "react-table";
 
-import Table from 'react-bootstrap/Table';
 import Row from 'react-bootstrap/Row';
 import Container from 'react-bootstrap/Container';
 
@@ -14,8 +12,9 @@ import { useSelector } from "react-redux";
 import ReactPaginate from 'react-paginate';
 import useWindowSize from "../../utils/useWindowSize.js";
 import { getEquilibria } from "./equilibriaSlice.js";
-import { pending } from "../loadingSlice.js";
+import { pending } from "../loading/loadingSlice.js";
 import SpinnerComponentRow from "../../reusable_components/SpinnerRow.js";
+import ReactTable from "../../reusable_components/ReactTable.js";
 /*
 7.7 ph
 10^-3.5 
@@ -50,46 +49,16 @@ const ConcentrationTable=React.memo(({ context, equilibrium, style, className })
     Immutable.List(equilibrium.species.aqueous.map(({id, concentration}) => ({id, concentration, db: context.speciesDB.aqs }))).sortBy(({id}) => context.speciesDB.aqs.get(id).index),
     Immutable.List(equilibrium.species?.solid?.present?.map(({id, concentration}) => ({id, concentration, db: context.speciesDB.solids }))).sortBy(({id}) => context.speciesDB.solids.get(id).index),
   ]).flatten(true), [equilibrium, context]);
-  console.log(data);
-
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    rows,
-    prepareRow,
-  } = useTable({
-    columns,
-    data,
-  });
-
-  const borderLengths=useMemo(() => Immutable.Set(cumulativeSum([equilibrium.species.component.size, equilibrium.species.aqueous.size, equilibrium.solid?.present?.size])).filter(item => item!==data.size && item!==0), [equilibrium, data.size]);
+  const borderLengths=useMemo(() => Immutable.Set(cumulativeSum([equilibrium.species.component.length, equilibrium.species.aqueous.length, equilibrium.solid?.present?.length ?? 0])).filter(item => item!==data.size && item!==0), [equilibrium, data.size]);
+  console.log(borderLengths)
   return (
-    <Table bordered {...getTableProps({style, className})}>
-      <thead>
-        {headerGroups.map(headerGroup => (
-          <tr {...headerGroup.getHeaderGroupProps()}>
-            {headerGroup.headers.map(column => (
-              <th {...column.getHeaderProps()}>{column.render('Header')}</th>
-            ))}
-          </tr> 
-        ))}
-      </thead>
-      <tbody {...getTableBodyProps()}>
-        {rows.map((row, i) => {
-          prepareRow(row);
-          return (
-            <tr {...row.getRowProps()}>
-              {row.cells.map(cell => {
-                const CellType=cell.column.id==="name" ? "th" : "td";
-                return <CellType {...cell.getCellProps(borderLengths.has(i+1) ? {style : {"borderBottom": "3px solid #dee2e6"}} : {})}>{cell.render('Cell')}</CellType>;
-              })}
-            </tr>
-          )
-        })}
-      </tbody>
-    </Table>
-  )
+    <ReactTable
+      columns={columns}
+      data={data}
+      headerColumn={"name"}
+      getCellProps={useCallback((cell) => {return borderLengths.has(cell.row.index+1) ? {style : {"borderBottom": "3px solid #dee2e6"}} : {}})}
+    />
+  );
 });
 
 const TotalConcentrationTable=React.memo(({context, equilibrium, style, className}) => {
@@ -109,43 +78,14 @@ const TotalConcentrationTable=React.memo(({context, equilibrium, style, classNam
 
   const data=useMemo(() => Immutable.List(equilibrium.totalConcentrations.map(({componentId, total}) => ({id: componentId, total, db: context.componentDB.components }))).sortBy(({id}) => context.componentDB.components._map.get(id)), [context, equilibrium]);
 
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    rows,
-    prepareRow,
-  } = useTable({
-    columns,
-    data,
-  });
-
   return (
-    <Table bordered {...getTableProps({style, className})}>
-      <thead>
-        {headerGroups.map(headerGroup => (
-          <tr {...headerGroup.getHeaderGroupProps()}>
-            {headerGroup.headers.map(column => (
-              <th {...column.getHeaderProps()}>{column.render('Header')}</th>
-            ))}
-          </tr>
-        ))}
-      </thead>
-      <tbody {...getTableBodyProps()}>
-        {rows.map((row, i) => {
-          prepareRow(row);
-          return (
-            <tr {...row.getRowProps()}>
-              {row.cells.map(cell => {
-                const CellType=cell.column.id==="name" ? "th" : "td";
-                return <CellType {...cell.getCellProps()}>{cell.render('Cell')}</CellType>;
-              })}
-            </tr>
-          )
-        })}
-      </tbody>
-    </Table>
-  )
+    <ReactTable
+      columns={columns}
+      data={data}
+      headerColumn={"name"}
+    />
+  );
+  
 });
 
 const SolublilityProductTable=React.memo(({context, equilibrium, style, className}) => {
@@ -155,56 +95,57 @@ const SolublilityProductTable=React.memo(({context, equilibrium, style, classNam
   
   const columns=useMemo(() => [
     {
-      Header: "Solid",
+      Header: "Solid (considered)",
       id: "name",
       accessor: ({id, db}) => <FormattedChemicalCompound>{db.get(id).name}</FormattedChemicalCompound>
     },
     {
       Header: "Solubility Product",
-      id: "solProd",
+      id: "solubilityProduct",
       accessor: ({solubilityProduct}) => numberToExpWithTrailing(solubilityProduct, 4)
     },
   ], []);
 
-  const data=useMemo(() => Immutable.List(equilibrium.species.solid.notPresent.map(({id, solubilityProduct}) => ({id, solubilityProduct, db: context.speciesDB.solids }))), [equilibrium, context]);
-
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    rows,
-    prepareRow,
-  } = useTable({
-    columns,
-    data,
-  });
+  const data=useMemo(() => Immutable.List(equilibrium.species.solid.notPresent.map(({id, solubilityProduct}) => ({id, solubilityProduct, db: context.speciesDB.solids }))).sortBy(({id}) => context.speciesDB.solids.get(id).index), [equilibrium, context]);
 
   return (
-    <Table bordered {...getTableProps({style, className})}>
-      <thead>
-        {headerGroups.map(headerGroup => (
-          <tr {...headerGroup.getHeaderGroupProps()}>
-            {headerGroup.headers.map(column => (
-              <th {...column.getHeaderProps()}>{column.render('Header')}</th>
-            ))}
-          </tr>
-        ))}
-      </thead>
-      <tbody {...getTableBodyProps()}>
-        {rows.map((row, i) => {
-          prepareRow(row);
-          return (
-            <tr {...row.getRowProps()}>
-              {row.cells.map(cell => {
-                const CellType=cell.column.id==="name" ? "th" : "td";
-                return <CellType {...cell.getCellProps()}>{cell.render('Cell')}</CellType>;
-              })}
-            </tr>
-          )
-        })}
-      </tbody>
-    </Table>
-  )
+    <ReactTable
+      columns={columns}
+      data={data}
+      headerColumn={"name"}
+    />
+  );
+});
+
+
+const ExtraSolublilityProductTable=React.memo(({context, equilibrium, style, className}) => {
+  if(!equilibrium?.extraSolubilityProducts.length){
+    return <></>;
+  }
+  
+  const columns=useMemo(() => [
+    {
+      Header: "Solid (not considered)",
+      id: "name",
+      accessor: ({id, db}) => <FormattedChemicalCompound>{db.get(id).name}</FormattedChemicalCompound>
+    },
+    {
+      Header: "Solubility Product",
+      id: "solubilityProduct",
+      accessor: ({solubilityProduct}) => numberToExpWithTrailing(solubilityProduct, 4)
+    },
+  ], []);
+
+  const data=useMemo(() => Immutable.List(equilibrium.extraSolubilityProducts.map(({id, solubilityProduct}) => ({id, solubilityProduct, db: context.speciesDB.solids }))).sortBy(({solubilityProduct}) => solubilityProduct).reverse(), [equilibrium, context]);
+
+  return (
+    <ReactTable
+      columns={columns}
+      data={data}
+      headerColumn={"name"}
+      getRowProps={useCallback((row) => {return Number(row.values.solubilityProduct)>1 ? {style: {border: "red 4px solid"}} : {}})}
+    />
+  );
 });
 
 const ResultTables=React.memo((props) => {
@@ -213,6 +154,7 @@ const ResultTables=React.memo((props) => {
       <ConcentrationTable {...props} className="mb-4 mb-lc-0"/>
       <TotalConcentrationTable {...props} className="mb-4 mb-lc-0"/>
       <SolublilityProductTable {...props} className="mb-4 mb-lc-0"/>
+      <ExtraSolublilityProductTable {...props} className="mb-4 mb-lc-0"/>
     </>
   );
 });
@@ -248,6 +190,7 @@ const Results = React.memo(({Footer, Body}) => {
   const windowSize=useWindowSize();
 
   const equilibria=useSelector(getEquilibria);
+  console.log(equilibria);
   const [pageNumber, setPageNumber]=useState(equilibria.size-1);
 
   const lg=windowSize.width>=992;
