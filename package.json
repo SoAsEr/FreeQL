@@ -8,7 +8,8 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
     "@testing-library/user-event": "^7.1.2",
-    "bootstrap": "^4.6.0",
+    "autoprefixer": "^10.2.4",
+    "chokidar-cli": "^2.1.0",
     "chunk": "0.0.3",
     "comlink": "^4.3.0",
     "fast-memoize": "^2.5.2",
@@ -18,11 +19,12 @@
     "immutable": "^4.0.0-rc.12",
     "is-number": "^7.0.0",
     "node-sass": "^4.0.0",
+    "npm-run-all": "^4.1.5",
+    "postcss-cli": "^8.3.1",
     "react": "^17.0.1",
     "react-bootstrap": "^1.4.3",
     "react-custom-scrollbars": "^4.2.1",
     "react-dom": "^17.0.1",
-    "react-error-boundary": "^3.1.0",
     "react-paginate": "^6.5.0",
     "react-redux": "^7.2.2",
     "react-scripts": "3.4.3",
@@ -34,16 +36,21 @@
     "reselect": "^4.0.0",
     "shallow-equal": "^1.2.1",
     "source-map-explorer": "^2.5.2",
+    "tailwindcss": "^2.0.2",
     "worker-loader": "^3.0.7"
   },
   "scripts": {
-    "predeploy": "npm run build",
     "analyze": "source-map-explorer 'build/static/js/*.js'",
-    "build-assembly": "node public/static/js/build.js",
+    "build:assembly": "node public/static/js/build.js",
+    "watch:assembly": "chokidar 'public/solver' -d 3000 -c 'npm run build:assembly'",
+    "build:tailwind": "tailwind build src/tailwind.css -o src/tailwind.output.css",
+    "watch:tailwind": "chokidar 'src/**/*.css' 'src/**/*.scss' --ignore src/tailwind.output.css -c 'npm run build:tailwind'",
+    "start:react": "react-scripts start",
+    "start": "npm-run-all --parallel build:tailwind build:assembly --parallel watch:assembly watch:tailwind start:react",
+    "build:react": "react-scripts build",
+    "build": "npm-run-all --parallel build:assembly build:tailwind --sequential build:react",
+    "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
-    "start": "react-scripts start",
-    "prebuild": "npm run build-assembly",
-    "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -61,6 +68,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {}
+  }
 }

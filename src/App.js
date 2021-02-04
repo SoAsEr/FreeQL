@@ -2,52 +2,35 @@ import React, { Suspense } from 'react';
 
 import './App.scss';
 
-import Navbar from 'react-bootstrap/Navbar';
-import Nav from 'react-bootstrap/Nav';
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
-
-import CenteringDiv from './reusable_components/CenteringDiv.js';
-import useWindowSize from './utils/useWindowSize.js';
-
 const FreeQL = React.lazy(() => import("./FreeQL.js"));
 
 function App() {
-  const windowSize=useWindowSize();
-  const headerHeight=56;
-  const footerHeight=windowSize.width>=768 ? 120 : 72;
   return (
-    <>
-      <Navbar expand="sm" bg="dark" variant="dark">
-        <CenteringDiv end="sm">
-          <Navbar.Brand href="/">
+    <div className="h-screen w-screen flex flex-col">
+      <nav className="flex-shrink-0 flex flex-row w-full px-16 py-8 items-center bg-gray-600 text-gray-100">
+        <div className="flex-grow sm:flex-grow-0">
+          <a href={process.env.PUBLIC_URL}>
             <img src={process.env.PUBLIC_URL+"/assets/img/logo.svg"} width="65" alt="FreeQL"/>
-          </Navbar.Brand>
-        </CenteringDiv>
-        <Navbar.Brand href="/">FreeQL</Navbar.Brand>
-        <CenteringDiv end="sm"/>
-        <Navbar.Collapse id="navbarTogglerDemo02">
-          <Nav className="mr-auto" style={{"fontSize": "1.025rem"}}>
-            <Nav.Link href="https://stephmorel8910.gitbook.io/freeql/" target="_blank">Help</Nav.Link>
-            <Nav.Link href="https://github.com/SoAsEr/FreeQL/blob/master/README.md" target="_blank">README</Nav.Link>
-            <Nav.Link href="https://github.com/SoAsEr/FreeQL/" target="_blank">Github</Nav.Link>
-          </Nav>
-        </Navbar.Collapse>
-      </Navbar>
-      <Suspense fallback={<div style={{"height" : "calc(100vh - "+(headerHeight+footerHeight)+"px)"}}/>}>
-        <FreeQL headerHeight={headerHeight} footerHeight={footerHeight}/>
-      </Suspense>
-      <footer className="bg-dark p-4 p-md-5 text-center">
-        <Container>
-          <Row>
-            <Col>
-              <span className="text-light">Created by Stephane Morel</span>
-            </Col>
-          </Row>
-        </Container>
+          </a>
+        </div>
+        <a href={process.env.PUBLIC_URL}>FreeQL</a>
+        <div className="sm:invisible flex-grow text-gray-400">
+          <div className="mr-auto">
+            <a href="https://stephmorel8910.gitbook.io/freeql/" target="_blank">Help</a>
+            <a href="https://github.com/SoAsEr/FreeQL/blob/master/README.md" target="_blank">README</a>
+            <a href="https://github.com/SoAsEr/FreeQL/" target="_blank">Github</a>
+          </div>
+        </div>
+      </nav>
+      <div className="flex-grow container mx-auto">
+        <Suspense fallback="">
+          <FreeQL/>
+        </Suspense>
+      </div>
+      <footer className="flex-shrink-0 w-full bg-gray-600 p-4 md:p-5 justify-center text-gray-100">
+        <p>Created by Stephane Morel</p>  
       </footer>
-    </>
+    </div>
 
   );
 }

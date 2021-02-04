@@ -64,7 +64,7 @@ const fetchComponentDB=({url, options, type, callback}) => {
       ({
         hPlusValue: options.hPlusValue, 
         waterValue: options.waterValue,
-        components: Immutable.OrderedMap(chunks.filter(item => getData(item, options, "id")).map(item => [
+        components: Immutable.OrderedMap(chunks.filter(item => getData(item, options, "id")).map(item => [ //ordered map for dropdown
           getData(item, options, "id"),
           {
             name: getData(item, options, "name"), 

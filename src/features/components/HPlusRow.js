@@ -7,7 +7,7 @@ import { useSelector } from "react-redux";
 
 const HPlusRow=React.memo(() => {
   const { hPlusValue } = useSelector(getComponentDB);
-  return <ComponentRow component={hPlusValue} disableCheck/>
+  return <ComponentRow component={hPlusValue} disableCheck noRemove/>
   
 });
 

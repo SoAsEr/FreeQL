@@ -45,7 +45,7 @@ const ConcentrationTable=React.memo(({ context, equilibrium, style, className })
   console.log(equilibrium);
 
   const data=useMemo(() => Immutable.List([
-    Immutable.List(equilibrium.species.component.map(({componentId, concentration}) => ({id: componentId, concentration, db: context.componentDB.components }))).sortBy(({id}) => context.componentDB.components._map.get(id)),
+    Immutable.List(equilibrium.species.component.map(({componentId, concentration}) => ({id: componentId, concentration, db: context.componentDB.components }))),
     Immutable.List(equilibrium.species.aqueous.map(({id, concentration}) => ({id, concentration, db: context.speciesDB.aqs }))).sortBy(({id}) => context.speciesDB.aqs.get(id).index),
     Immutable.List(equilibrium.species?.solid?.present?.map(({id, concentration}) => ({id, concentration, db: context.speciesDB.solids }))).sortBy(({id}) => context.speciesDB.solids.get(id).index),
   ]).flatten(true), [equilibrium, context]);
@@ -76,7 +76,7 @@ const TotalConcentrationTable=React.memo(({context, equilibrium, style, classNam
     },
   ], []);
 
-  const data=useMemo(() => Immutable.List(equilibrium.totalConcentrations.map(({componentId, total}) => ({id: componentId, total, db: context.componentDB.components }))).sortBy(({id}) => context.componentDB.components._map.get(id)), [context, equilibrium]);
+  const data=useMemo(() => Immutable.List(equilibrium.totalConcentrations.map(({componentId, total}) => ({id: componentId, total, db: context.componentDB.components }))).sortBy(({id}) => context.componentDB.components), [context, equilibrium]);
 
   return (
     <ReactTable

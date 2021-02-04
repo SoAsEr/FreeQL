@@ -43,18 +43,6 @@ const ComponentSelect = React.lazy(() => import("./features/components/Component
 const SpeciesList = React.lazy(() => import('./features/species/SpeciesList.js'));
 const TableauTable = React.lazy(() => import('./features/species/tableau/Tableau.js'));
 
-const ScrollContainer=React.memo(React.forwardRef((props, ref) => {
-  return (
-    <div className="w-100" style={{"maxHeight" : "calc(100vh - "+(props.headerHeight+props.footerHeight)+"px)", "overflowY" : "auto"}} ref={ref}>
-      <div style={{"overflowX" : "hidden"}}>
-        <Container fluid>
-          {props.children}
-        </Container>
-      </div>
-    </div>
-  )
-}));
-
 const usePreviousRef=(value) => {
   const ref = useRef();
   useEffect(() => {
@@ -71,9 +59,6 @@ const FreeQL=(props) => {
   }, [dispatch])
 
   const windowSize=useWindowSize();
-
-  const outerAdderHeight=0/*windowSize.height>=700 ? 54 : 0*/;
-  const buttonsHeight=70;
 
   const [currentModal, openModal, closeModal]=useModalStack();
 
@@ -95,86 +80,63 @@ const FreeQL=(props) => {
   }, [componentSelect, numComponents, previousNumComponentsRef]);
 
   return(
-    <Form>
-      <Container style={{"height" : "calc(100vh - "+(props.headerHeight+buttonsHeight+props.footerHeight)+"px)"}}>
-        <Row>
-          <Col className="p-0">
-            <ScrollContainer headerHeight={props.headerHeight} footerHeight={props.footerHeight+buttonsHeight+outerAdderHeight}>
-              <HPlusHeader />
-              <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB"]}>
-                <HPlusRow />
-              </ReduxSuspense>
-              <ComponentListHeader />
-              <Collapse in={true}>
-                <div>
-                  <ReduxSuspense fallback="" subscribedItems={["componentDB"]}>
-                    <ComponentList />
-                  </ReduxSuspense>
-                  {
-                    windowSize.height<700 &&
-                    <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB"]}>
-                      <Row>
-                        <Col>
-                          <div className="d-flex center-items w-100" ref={componentSelect}>
-                            <div className="hover-switch" style={{"width" : "15%"}} onClick={createModalOpenCallback("addComponents")}>
-                              <PlusCircle className="w-100"/>
-                              <PlusCircleFilled className="w-100"/>
-                            </div>
-                            <ComponentSelectModal show={currentModal==="addComponents"} close={createModalCloseCallback("addComponents")} windowHeight={windowSize.height}/>
-                          </div>
-                        </Col>
-                      </Row>
-                    </ReduxSuspense>
-                  }
-                  {
-                    windowSize.height>=700 &&
-                    <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB"]}>
-                      <Row className="pt-2 pb-1">
-                        <Col>
-                          <div ref={componentSelect}>
-                            <ComponentSelect/>
-                          </div>
-                        </Col>
-                      </Row>
-                    </ReduxSuspense>
-                  }
+    <>
+      <div>
+        <div className="overflow-auto">
+          <HPlusHeader />
+          <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB"]}>
+            <HPlusRow />
+          </ReduxSuspense>
+          <ComponentListHeader />
+          <ReduxSuspense fallback="" subscribedItems={["componentDB"]}>
+            <ComponentList />
+          </ReduxSuspense>
+          {
+            windowSize.height<700 &&
+            <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB"]}>
+              <div className="flex center-items w-100" ref={componentSelect}>
+                <div className="hover-switch" style={{"width" : "15%"}} onClick={createModalOpenCallback("addComponents")}>
+                  <PlusCircle className="w-100"/>
+                  <PlusCircleFilled className="w-100"/>
                 </div>
-              </Collapse>
-              <Collapse in={true}>
-                <div>
-                  <ReduxSuspense fallback="" subscribedItems={["componentDB", "speciesDB"]}>
-                    <GasList />
-                  </ReduxSuspense>
-                </div>  
-              </Collapse>
-            </ScrollContainer>
-          </Col>
-          <Col xs="4" className="d-none d-md-flex p-0">
-            <ScrollContainer headerHeight={props.headerHeight} footerHeight={props.footerHeight+buttonsHeight}>
-              <Row className="mt-4">
-                <Col className="center-items">
-                  <h5 className="text-muted text-center">
-                    Species
-                  </h5>
+                <ComponentSelectModal show={currentModal==="addComponents"} close={createModalCloseCallback("addComponents")} windowHeight={windowSize.height}/>
+              </div>
+            </ReduxSuspense>
+          }
+          {
+            windowSize.height>=700 &&
+            <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB"]}>
+              <Row className="pt-2 pb-1">
+                <Col>
+                  <div ref={componentSelect}>
+                    <ComponentSelect/>
+                  </div>
                 </Col>
               </Row>
-              <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB", "speciesDB"]}>
-                <SpeciesList openTableauModal={createModalOpenCallback("tableau")} />
-              </ReduxSuspense>
-            </ScrollContainer>
-          </Col>
-        </Row>
-      </Container>
-      <Container>
-        <Form.Row className="py-3">
-          <Col className="d-none d-md-block">
-            <CalculateButton onClick={createModalOpenCallback("equilibria")} className="w-100" variant="primary"/>
-          </Col>
-          <Col className="d-block d-md-none">
-            <Button className="w-100" variant="primary" onClick={createModalOpenCallback("species")}>Select Species</Button>
-          </Col>
-        </Form.Row>
-      </Container>
+            </ReduxSuspense>
+          }
+          <ReduxSuspense fallback="" subscribedItems={["componentDB", "speciesDB"]}>
+            <GasList />
+          </ReduxSuspense>
+        </div>
+        <div className="overflow-auto w-1/3">
+          <div className="place-center mt-2">
+            <label className="text-gray-500">
+              Species
+            </label>
+          </div>
+          <ReduxSuspense fallback={<SpinnerComponentRow/>} subscribedItems={["componentDB", "speciesDB"]}>
+            <SpeciesList openTableauModal={createModalOpenCallback("tableau")} />
+          </ReduxSuspense>
+        </div>
+      </div>
+      <div className="my-3 w-full flex flex-row">
+        <CalculateButton onClick={createModalOpenCallback("equilibria")} className="flex-grow" variant="primary"/>
+        {
+          //<button className="flex-grow md:hidden" variant="primary" onClick={createModalOpenCallback("species")}>Select Species</button>
+        }
+      </div>
+      {/*
       <Modal show={currentModal==="species"} onHide={createModalCloseCallback("species")} backdrop="static" scrollable>
         <Modal.Header closeButton>
           Species
@@ -214,7 +176,8 @@ const FreeQL=(props) => {
           <Equilibria Body={Modal.Body} Footer={Modal.Footer}/>
         </ReduxSuspense>
       </Modal>
-    </Form>
+      */}
+    </>
   );
 };
 
