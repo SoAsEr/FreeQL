@@ -1,9 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
 import * as Immutable from "immutable";
 
-import Row from 'react-bootstrap/Row';
-import Container from 'react-bootstrap/Container';
-
 import { numberToExpWithTrailing } from "../../utils/string-utils.js"
 import { cumulativeSum } from "../../utils/array-utils.js";
 import FormattedChemicalCompound from "../../reusable_components/formatting/FormattedChemicalCompound.js";
@@ -56,7 +53,7 @@ const ConcentrationTable=React.memo(({ context, equilibrium, style, className })
       columns={columns}
       data={data}
       headerColumn={"name"}
-      getCellProps={useCallback((cell) => {return borderLengths.has(cell.row.index+1) ? {style : {"borderBottom": "3px solid #dee2e6"}} : {}})}
+      getCellProps={useCallback((cell) => {return borderLengths.has(cell.row.index+1) ? {classNames: "!border-b-2"} : {}})}
     />
   );
 });
@@ -83,6 +80,7 @@ const TotalConcentrationTable=React.memo(({context, equilibrium, style, classNam
       columns={columns}
       data={data}
       headerColumn={"name"}
+      tableProps={style, className}
     />
   );
   
@@ -113,6 +111,7 @@ const SolublilityProductTable=React.memo(({context, equilibrium, style, classNam
       columns={columns}
       data={data}
       headerColumn={"name"}
+      tableProps={style, className}
     />
   );
 });
@@ -143,7 +142,8 @@ const ExtraSolublilityProductTable=React.memo(({context, equilibrium, style, cla
       columns={columns}
       data={data}
       headerColumn={"name"}
-      getRowProps={useCallback((row) => {return Number(row.values.solubilityProduct)>1 ? {style: {border: "red 4px solid"}} : {}})}
+      getRowProps={useCallback((row) => {return Number(row.values.solubilityProduct)>1 ? {className: "border-l-4 border-red-500"} : {className: "border-l-4 border-green-500"}})}
+      tableProps={style, className}
     />
   );
 });
@@ -151,10 +151,10 @@ const ExtraSolublilityProductTable=React.memo(({context, equilibrium, style, cla
 const ResultTables=React.memo((props) => {
   return (
     <>
-      <ConcentrationTable {...props} className="mb-4 mb-lc-0"/>
-      <TotalConcentrationTable {...props} className="mb-4 mb-lc-0"/>
-      <SolublilityProductTable {...props} className="mb-4 mb-lc-0"/>
-      <ExtraSolublilityProductTable {...props} className="mb-4 mb-lc-0"/>
+      <ConcentrationTable {...props} className="mb-4"/>
+      <TotalConcentrationTable {...props} className="mb-4"/>
+      <SolublilityProductTable {...props} className="mb-4"/>
+      <ExtraSolublilityProductTable {...props} className="mb-4 last:mb-0"/>
     </>
   );
 });
@@ -165,10 +165,10 @@ const ResultError=React.memo(({error}) => {
 
 const ResultErrors=React.memo(({errors}) => {
   return (
-    <Row>
+    <div className="w-full">
       <h3>The Following Errors were found:</h3>
       <p>{errors.map(error => <ResultError error={error}/>)}</p>
-    </Row>
+    </div>
   )
 });
 
@@ -201,49 +201,42 @@ const Results = React.memo(({Footer, Body}) => {
         <ResultPage equilibrium={equilibria.get(pageNumber)}/>
       </Body>
       <Footer>
-        <Container fluid>
-          <Row>
-            <nav className="w-100">
-              <ReactPaginate
-                initialPage={equilibria.size-1}
-                onPageChange={({selected}) => {setPageNumber(selected)}}
-                pageCount={equilibria.size}
-                previousLabel=
-                {
-                  <>
-                    <svg width="1em" height="1em" viewBox="0 0 16 16" className="bi bi-chevron-left" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                      <path fillRule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
-                    </svg>
-                    <label className="d-none d-md-inline-block m-0">Previous</label>
-                  </>
-                }
-                nextLabel=
-                {
-                  <>
-                    <label className="d-none d-md-inline-block m-0">Next</label>
-                    <svg width="1em" height="1em" viewBox="0 0 16 16" className="bi bi-chevron-right" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                      <path fillRule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
-                    </svg>
-                  </>
-                  
-                }
-                breakLabel={'...'}
-                marginPagesDisplayed={sm ? 2 : 1}
-                pageRangeDisplayed={sm ? lg ? 4 : 3 : 1}
-                containerClassName={"pagination w-100 d-flex"}
-                pageClassName={"page-item w-100 text-center nowrap no-select"}
-                pageLinkClassName={"page-link"}
-                previousClassName={"page-item w-100 text-center nowrap no-select"}
-                previousLinkClassName={"page-link"}
-                nextClassName={"page-item w-100 text-center nowrap no-select"}
-                nextLinkClassName={"page-link"}
-                breakClassName={"page-item w-100 text-center nowrap no-select"}
-                breakLinkClassName={"page-link"}
-                activeClassName={'active'}
-              />
-            </nav>
-          </Row>
-        </Container>
+        <nav className="w-full">
+          <ReactPaginate
+            initialPage={equilibria.size-1}
+            onPageChange={({selected}) => {setPageNumber(selected)}}
+            pageCount={equilibria.size}
+            previousLabel=
+            {
+              <>
+                <svg width="1em" height="1em" viewBox="0 0 16 16" className="bi bi-chevron-left" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+                </svg>
+                <label className="hidden md:inline-block m-0">Previous</label>
+              </>
+            }
+            nextLabel=
+            {
+              <>
+                <label className="hidden md:inline-block m-0">Next</label>
+                <svg width="1em" height="1em" viewBox="0 0 16 16" className="bi bi-chevron-right" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                </svg>
+              </>
+              
+            }
+            breakLabel={'...'}
+            marginPagesDisplayed={sm ? 2 : 1}
+            pageRangeDisplayed={sm ? lg ? 4 : 3 : 1}
+            containerClassName={"w-full flex justify-between"}
+            pageClassName={"px-1 h-36 min-w-36 rounded-md color-gray-400 hover:bg-gray-200 text-center select-none"}
+            previousClassName={"px-1 h-36 min-w-36 rounded-md color-gray-400 text-center select-none"}
+            nextClassName={"px-1 h-36 min-w-36 rounded-md color-gray-400 text-center select-none"}
+            breakClassName={"px-1 h-36 min-w-36 rounded-md color-gray-400 text-center select-none"}
+            activeClassName={'!bg-lightBlue-500 !color-white !hover:bg-lightBlue-500'}
+            disabledClassName={'invisible'}
+          />
+        </nav>
       </Footer>
     </>
   )

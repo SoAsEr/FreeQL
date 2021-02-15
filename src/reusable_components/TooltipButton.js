@@ -1,28 +1,17 @@
+import Tippy from "@tippyjs/react";
 import React from "react";
-
-import Button from "react-bootstrap/Button";
-import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-import Tooltip from "react-bootstrap/Tooltip";
 
 
 const TooltipButton=React.memo(({disabled, disableMessage, ...buttonProps}) => {
-  if(disabled) {
+   if(disabled) {
     return (
-      <OverlayTrigger
-        placement="top"
-        overlay={
-          <Tooltip>
-            {disableMessage}
-          </Tooltip>
-        }
-      >
-        <div className="disabled-button-wrapper">
-          <Button {...buttonProps} disabled />
-        </div>
-      </OverlayTrigger>
+      <Tippy content={disableMessage}>
+        <div className="flex"><button {...buttonProps} disabled /></div>
+      </Tippy>
     )
+
   } else {
-    return <Button {...buttonProps} />;
+    return <div className="flex"><button {...buttonProps} disabled={disabled} /></div>;
   }
 });
 export default TooltipButton

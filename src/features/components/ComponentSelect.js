@@ -29,6 +29,7 @@ const ComponentSelect=React.forwardRef((props, ref) => {
     <VirtualizedSelect
       ref={ref}
       menuPosition="fixed"
+      placeholder="Add Component..."
       options={availableComponents}
       filterOption={(option, searchValue) => searchFilter(option.value, searchValue)}
       formatOptionLabel={createFormatOptionLabel(FormattedChemicalCompound)}

@@ -1,6 +1,12 @@
 import React from "react";
-import Table from 'react-bootstrap/Table';
 import { useTable } from "react-table";
+
+const defaultTableClass="border-seperate border-gray-400 border border-spacing-0";
+const defaultHeaderGroupClass="";
+const defaultHeaderClass="";
+const defaultTaableBodyProps="";
+const defaultRowProps="";
+const defaultCellProps="border border-gray-400";
 
 const ReactTable=React.memo(({
   tableProps,
@@ -25,7 +31,7 @@ const ReactTable=React.memo(({
   });
 
   return (
-    <Table bordered {...getTableProps(tableProps)}>
+    <table {...getTableProps(tableProps)}>
       <thead>
         {headerGroups.map((headerGroup, numHeaderGroup) => (
           <tr {...headerGroup.getHeaderGroupProps(getHeaderGroupProps(headerGroup, numHeaderGroup))}>
@@ -48,7 +54,7 @@ const ReactTable=React.memo(({
           )
         })}
       </tbody>
-    </Table>
+    </table>
   )
 });
 ReactTable.defaultProps={

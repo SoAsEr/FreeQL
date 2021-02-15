@@ -11,9 +11,8 @@ import { getComponentToGases } from '../species/gases/gasInputSlice.js';
 import { removeComponents } from '../common/actions.js';
 
 
-const ComponentRow=React.memo(({component, disableCheck, noRemove}) => {
+const ComponentRow=React.memo(({component, noRemove}) => {
   const componentDB = useSelector(getComponentDB); 
-  const atEquilibrium = useSelector(state => getComponentsAtEquilibrium(state).has(component));
   const replacedByGas = useSelector(state => getComponentToGases(state).has(component));
 
   const dispatch = useDispatch();
@@ -23,16 +22,7 @@ const ComponentRow=React.memo(({component, disableCheck, noRemove}) => {
       id={component}
       db={componentDB.components}
       disabled={replacedByGas} 
-      disableCheck={disableCheck}
       noRemove={noRemove}
-      checked={atEquilibrium || replacedByGas}
-      onCheck={(checked) => {
-        if(checked){
-          dispatch(putComponentsAtEquilibrium([component]));
-        } else {
-          dispatch(removeComponentsFromEquilibrium([component]));
-        }
-      }}
       onValueChange={(value) => {
         dispatch(componentValueChanged({component, value}));
       }}

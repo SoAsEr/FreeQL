@@ -3,3 +3,56 @@
 @tailwind components;
 
 @tailwind utilities;
+
+@layer base{
+  input[type="checkbox"]:not(:disabled), input[type="radio"]:not(:disabled){
+    cursor: pointer;
+  }
+  input[type="checkbox"]:disabled, input[type="radio"]:disabled{
+    cursor: default;
+  }
+  button, [role="button"] {
+    cursor: pointer;
+  }
+  button:disabled, [role="button"]:disabled {
+    cursor: default;
+  }
+}
+
+@layer utilities {
+  @responsive{
+    .border-spacing-0 {
+      border-spacing: 0px;
+    }
+    .border-spacing-2 {
+      border-spacing: 2px;
+    }
+    .border-spacing-4 {
+      border-spacing: 4px;
+    }
+    .border-spacing-8 {
+      border-spacing: 8px;
+    }
+    .center-self {
+      @apply absolute transform -translate-x-1/2 left-1/2;
+    }
+    .max-h-component{
+      max-height: calc(100% - 54px);
+    }
+  }
+}
+
+.text-control{
+  @apply outline-none rounded-md px-3 py-1.5 focus:ring border disabled:bg-gray-200 disabled:border-gray-300 disabled:text-gray-500;
+  @apply border-gray-400 focus:border-blue-400 focus:ring-blue-200;
+}
+.text-control.thin{
+  @apply py-1;
+}
+.invalid.text-control{
+  @apply border-red-500 ring-red-200;
+}
+
+.btn-primary{
+  @apply disabled:bg-gray-500 bg-gray-800 text-gray-100 py-2 px-3 rounded;
+} 

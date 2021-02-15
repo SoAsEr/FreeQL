@@ -3,9 +3,6 @@ import React, { useCallback } from 'react';
 
 import * as Immutable from 'immutable';
 
-
-import Modal from 'react-bootstrap/Modal';
-
 import useComponentSearchFilter from "./useComponentSearchFilter.js"
 
 import FormattedChemicalCompound from "../../reusable_components/formatting/FormattedChemicalCompound.js";
@@ -24,7 +21,8 @@ const ComponentSelectModal=React.memo(({show, close, windowHeight}) => {
 
   return(
     <>
-      <Modal show={show} onHide={close}>
+      {/*
+        <Modal show={show} onHide={close}>
         <Modal.Header closeButton>
           Add Components
         </Modal.Header>
@@ -46,6 +44,7 @@ const ComponentSelectModal=React.memo(({show, close, windowHeight}) => {
           Footer={Modal.Footer}
         />
       </Modal>
+        */}
     </>
   );
 });

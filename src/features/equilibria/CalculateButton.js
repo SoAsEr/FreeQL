@@ -35,6 +35,7 @@ const DisabledCalculateButton=React.memo(({disableMessage, ...otherProps}) => {
       disabled
       disableMessage={disableMessage} 
       children={"Calculate"} 
+      className="btn-primary mx-4 my-2 shadow-xl w-full"
       {...otherProps} 
     />
   )
@@ -51,6 +52,7 @@ const EnabledCalculateButton=React.memo(({onClick, ...otherProps}) => {
         dispatch(calculateEquilibrium(context))
       }} 
       children={"Calculate"} 
+      className="btn-primary mx-4 my-2 shadow-xl w-full"
       {...otherProps} 
     />
   )

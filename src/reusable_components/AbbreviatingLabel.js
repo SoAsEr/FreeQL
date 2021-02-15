@@ -1,12 +1,12 @@
 import React from "react";
-
-const AbbreviatingLabel=(props) => (
+import classNames from "classnames";
+const AbbreviatingLabel=({className, children, abbr, breakpoint}) => (
   <>
-    <label className={"w-100 d-none d-"+props.breakpoint+"-block "+props.className}>
-      {props.children}
+    <label className={classNames(className, breakpoint+":block", "hidden")}>
+      {children}
     </label>
-    <label className={"w-100 d-block d-"+props.breakpoint+"-none "+props.className}>
-      {props.abbr}
+    <label className={classNames(className, breakpoint+":hidden", "block")}>
+      {abbr}
     </label>
   </>
 );

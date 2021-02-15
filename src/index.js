@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './tailwind.output.css';
+import 'tippy.js/dist/tippy.css'; // optional
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 

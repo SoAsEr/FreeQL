@@ -14,7 +14,7 @@ const FormattedChemicalCompound=React.memo((props) => {
   const regex=/(?<WordMatcher>.*?[^0-9[(\s])(?:(?<EndMatcher1>$|[:.\s])|(?<Charge1>(?<ChargeSign1>[+-])(?:(?:1|(?<ChargeValue1>[2-9]))|(?<EndMatcher2>$|[:.\s])))|(?<SubMatcher>[0-9]+)(?<Charge2>(?<ChargeSign2>[+-])(?:(?:1|(?<ChargeValue2>[2-9]))|(?<EndMatcher3>$|[:.\s])))?)(?<EndMatcher4>$|[:.\s])?/g;
   //$<WordMatcher>_($<SubMatcher>)^($<ChargeValue1>$<ChargeValue2>$<ChargeSign1>$<ChargeSign2>)$<EndMatcher1>$<EndMatcher2>$<EndMatcher3>
   return(
-    <div {...props}>
+    <>
         {Array.from(props.children.matchAll(regex)).map((match) => {
           const chargeValue=[match.groups.ChargeValue1, match.groups.ChargeValue2].reduce((prev, curr) => curr ? curr : prev, "");
           const chargeSign=[match.groups.ChargeSign1, match.groups.ChargeSign2].reduce((prev, curr) => curr ? curr : prev, "");
@@ -26,7 +26,7 @@ const FormattedChemicalCompound=React.memo((props) => {
           );
         })
         }
-    </div>
+    </>
   );
 });
 export default FormattedChemicalCompound;

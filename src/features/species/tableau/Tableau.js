@@ -10,7 +10,6 @@ import { Scrollbars } from 'react-custom-scrollbars';
 
 import { useTable } from 'react-table';
 
-import Table from 'react-bootstrap/Table';
 import is_number from 'is-number';
 import { useDispatch, useSelector } from 'react-redux';
 import { addLogKChange, removeLogKChange } from '../speciesSlice';
@@ -19,6 +18,7 @@ import { getComponentDB, getComponentsAtEquilibrium, getComponentsConc, getCompo
 import EditDefault from '../../../reusable_components/EditDefault';
 import FormattedChemicalCompound from '../../../reusable_components/formatting/FormattedChemicalCompound.js';
 import { getGasReplacements } from '../gases/gasInputSlice.js';
+import AbbreviatingLabel from '../../../reusable_components/AbbreviatingLabel.js';
 
 const LogKEditor=React.memo((props) => {
   const { dbLogK, specie, type} = props;
@@ -57,7 +57,7 @@ const TableauTable=React.memo((props) => {
   const lg=windowWidth>=992;
   const headerColumn=useMemo(() => ({
     Header: "",
-    Footer: () => (<><span className="d-none d-xl-block">Total Concentration</span><span className="d-block d-xl-none">Total Conc.</span></>),
+    Footer: () => (<AbbreviatingLabel abbr="Total Conc." breakpoint="sm">Total Concentration</AbbreviatingLabel>),
     id: "name",
     accessor: ([specie, {name}]) => (<FormattedChemicalCompound>{name}</FormattedChemicalCompound>),
   }), []);
@@ -139,7 +139,7 @@ const TableauTable=React.memo((props) => {
         }
       }
     >
-      <Table striped bordered hover {...getTableProps({
+      <table striped bordered hover {...getTableProps({
         style: {}
       })}>
         <thead>
@@ -265,7 +265,7 @@ const TableauTable=React.memo((props) => {
             </tr>
           ))}
         </tfoot>
-      </Table>
+      </table>
     </Scrollbars>
   )
 });
