@@ -20,15 +20,12 @@ const useCallbackRef=(onUpdate , cleanupOld, onNull=() => {}) => {
 }
 
 const mergeRefs = (...refs) => {
-  const filteredRefs = refs.filter(Boolean);
-  if (!filteredRefs.length) return null;
-  if (filteredRefs.length === 0) return filteredRefs[0];
-  return inst => {
-    for (const ref of filteredRefs) {
+  return node => {
+    for (const ref of refs) {
       if (typeof ref === 'function') {
-        ref(inst);
+        ref(node);
       } else if (ref) {
-        ref.current = inst;
+        ref.current = node;
       }
     }
   };

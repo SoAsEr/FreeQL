@@ -1,0 +1,350 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{newpxtext,newpxmath}
+\usepackage[version=4]{mhchem}
+\usepackage{siunitx}
+\usepackage{amsmath}
+\usepackage{bm}
+
+\usepackage[activate={true,nocompatibility}]{microtype}
+
+\newcommand{\matr}[1]{\bm{#1}}
+\newcommand{\vect}[1]{\bm{#1}}
+\title{Solving Open Systems}
+\author{Morel}
+
+
+\begin{document}
+
+\maketitle
+
+\newpage
+\section{Problem}
+
+This section will deal with how computers solve equilibria problems that can be represented by tableaus. In this case "solve" means to find the species concentrations given the component total concentrations.
+\section{Mathematical Representation}
+Every tableau has a trivial dual matrix
+
+\noindent\begin{minipage}{.5\linewidth}
+\begin{center}
+    \begin{tabular} {c| c c c}
+        \setlength{\linewidth}{1cm}
+         & \ce{H+} & \ce{CO3^2-}\\
+        \hline
+        \ce{H+} & 1 & \\
+        \ce{CO3^2-} & & 1 \\
+        \ce{OH-} & -1 &  \\
+        \ce{HCO3-} & 1 & 1 \\
+        \ce{H2CO3*} & 2 & 1 \\
+    \end{tabular}
+\end{center}
+\end{minipage}%
+\begin{minipage}{.5\linewidth}
+    \begin{equation*}
+        \begin{bmatrix}
+            1 & 0\\
+            0 & 1\\
+            -1 & 0\\
+            1 & 1\\
+            2 & 1\\
+        \end{bmatrix}
+    \end{equation*}
+\end{minipage}
+
+However, finding the species concentration the problem also requires the equilibrium constants and the total concentration. Here, we define "tableau" to refer to a coefficient--constant pair.
+\begin{center}
+\begin{tabular}{c|c|c}
+    Coefficients ($\matr{M}$) & Constants ($\vect{c}$) \\
+    \hline
+    $\begin{bmatrix}
+        1 & 0\\
+        0 & 1\\
+        -1 & 0\\
+        1 & 1\\
+        2 & 1\\
+    \end{bmatrix}$ &
+    $\begin{bmatrix}
+        1\\
+        1\\
+        \num{e-14}\\
+        \num{4.7e-11}\\
+        \num{2.1e-17}\\
+    \end{bmatrix}$ \\
+    \hline
+    Total ($\vect{t}$)\\
+    \hline
+    $\begin{bmatrix}
+        0 & \num{1e-3}
+    \end{bmatrix}$
+    \end{tabular}
+\end{center}
+
+\subsection{Definition of total concentration row vector}
+
+Given a $m \times n$ tableau matrix--vector pair $\matr{M}$ and $\vect{c}$, and concentration of the components row vector $\vect{x}$; the total concentration row vector $\vect{t}$ is defined to be:
+
+\begin{equation*}
+  \vect{t}=
+ \begin{bmatrix}
+  \sum_{p=1}^{m} \matr{M}_{p1} \vect{c}_p \prod_{k=1}^{n} \vect{x}_k^{\matr{M}_{pk}}, &
+  \hdots &
+  \sum_{p=1}^{m} \matr{M}_{pj} \vect{c}_p \prod_{k=1}^{n} \vect{x}_k^{\matr{M}_{pk}} \\
+\end{bmatrix}
+\end{equation*}
+
+
+Conceptually, $c_i\prod_{k=1}^{n} x_k^{M_{ik}}$ represents the concentration of species $i$. The sum represents calculating the total concentrations from the species according the stochiometric coeffecients, in this case $M_{pj}$.
+
+
+\section{Solving for x}
+Finding the species concentrations given the total concentrations requires finding a solution to the simultaneous equations $\vect{t}$. Once this is found, the species concentrations can be found trivially.
+
+\subsection{The Jacobian}
+While there are many numerical methods to solve simultaneous equations, in this case a particularly elegant and efficient method of finding the jacobian allows the use Newton's method.
+
+\begin{equation*}
+  \matr{A}_{ij}=\matr{M}_{ij} \vect{c}_i \prod_{k=1}^{n} \vect{x}^{\matr{M}_{ik}}
+\end{equation*}
+
+\begin{equation*}
+  \matr{B}_{ij}=\frac{\matr{M}_{ij}}{\vect{x}_j}
+\end{equation*}
+\begin{equation*}
+  \left(\matr{A}^\intercal\cdot\matr{B}\right)_{ij}=\sum_{p=1}^{m} \matr{M}_{pi} \vect{c}_p \frac{\matr{M}_{pj}}{\vect{x}_j} \prod_{k=1}^{n} \vect{x}_k^{\matr{M}_{pk}}=\frac{\partial \vect{t}_i}{\partial \vect{x}_j}
+\end{equation*}
+
+As $\vect{A}$ is an intermediate in the process of solving for our totals (before summing up along the columns), its calculation is free. Therefore, finding the jacobian only costs $nm$ divisions and one matrix multiplication. This in practice is much less than than the cost of taking the powers.
+
+\subsection{Newton's method}
+At each iteration of newton's method, the species concentration, $\matr{A}$, jacobian, and total concentrations are found. The error is the calculated total concentration minus the input total concentration. We then use any linear equation solving method (likely guassian elimination) to find the delta. The only caveat is that if our delta is greater than our current solution, we divide the current solution by 10. This is to avoid negative concentrations. While these are valid mathematical solutions, they do not represent anything physical. A good stopping condition is when the error divided coefficientwise with the maximum value in each column of A is less than a specified number either \num{e-4} or \num{e-5}. This corresponds to at least 99.99\% or 99.999\% of the total concentration accounted for.
+\section{Substitutions}
+In many systems, given an input tableau, some substitutions need to be made. For example, if a component concentration is known from the start, then it simplifies the problem greatly to be able to substitute that concentration in and reduce the size of the problem. This is also the case when there are solids or gasses at equilibrium. In that case one component is substituted for a series of others.
+\subsection{Representation}
+A convenient way to represent these substitutions is a row vector $\vect{v}$ corresponding to the component coefficients, a constant $c$, and an index representing which component is to be substituted. The index chosen is arbitrary, but must be unique but its corresponding coefficient cannot be 0. Everything is defined such that the following equation is true:
+\begin{equation*}
+    1=c \prod_{j=1}^{n}\vect{x}_j^{\vect{v}_j}
+\end{equation*}
+
+The following are example substitutions:
+$$\begin{bmatrix} \ce{H+} & \ce{CO3^2-} & \ce{Ca^2+}  \end{bmatrix}$$
+\begin{center}
+\begin{tabular}{c| c c c}
+    Situation & Vector ($\vect{x}$) & Constant ($c$) & Index($p$) \\
+    \hline
+    \ce{CaCO3(s)} is present & $\begin{bmatrix} 0 & 1 & 1 \end{bmatrix}$ & \num{3.02e8} & 2  \\
+    \ce{CaO(s)} is present& $\begin{bmatrix} -2 & 0 & 1 \end{bmatrix}$ & \num{2.0e-33} & 3 \\
+    pH is 8.3 & $\begin{bmatrix} 1 & 0 & 0 \end{bmatrix}$ & \num{2e8} & 1
+\end{tabular}
+\end{center}
+
+In order to do anything with this substitution however, $\vect{x}_p$ must be isolated.
+\begin{equation*}
+    x_p = c^{\frac{-1}{v_p}} \prod_{j=1}^{n}\vect{x}_j^{\frac{-\vect{v}_j}{v_p}}
+\end{equation*}
+As $\vect{x}_p$ is on the left side of the equation, its corresponding term is set to zero. All of the substitutions are collected into a single matrix for convenience.
+\begin{center}
+    \begin{tabular}{c|c|c}
+    Coefficients & Constants & Indexes  \\
+    \hline
+    $\begin{bmatrix}
+        0 & 0 & -1 \\
+       2 & 0 & 0 \\
+       0 & 0 & 0 \\
+    \end{bmatrix}$  &
+    $\begin{bmatrix}
+        \num{3.31e-9} \\
+       \num{5.0e32} \\
+       \num{5.0e-9}
+    \end{bmatrix}$  &
+    $\begin{bmatrix}
+        2 \\
+       3 \\
+       1\\
+    \end{bmatrix}$
+\end{tabular}
+\end{center}
+
+\subsection{Simplification}
+The first two substitutions:
+\begin{center}
+    \begin{tabular}{c|c|c}
+    Coefficients ($\matr{N}$) & Constants ($\vect{d}$)  & Indexes ($\vect{u}$)  \\
+    \hline
+    $\begin{bmatrix}
+        0 & 0 & -1 \\
+       2 & 0 & 0 \\
+    \end{bmatrix}$  &
+    $\begin{bmatrix}
+        \num{3.31e-9} \\
+       \num{5.0e32} \\
+    \end{bmatrix}$  &
+    $\begin{bmatrix}
+        2 \\
+       3 \\
+    \end{bmatrix}$
+\end{tabular}
+\end{center}
+algebraically represent the simultaneous equations:
+\begin{equation*}
+    \begin{cases}
+    \ce{[CO3^2-]=\num{3.31e-9}[Ca^2+]^{-1}} \\
+    \ce{[Ca^2+]=\num{5.0e32}[H+]^2}
+    \end{cases}
+\end{equation*}
+
+However, it is obvious that this set of equations is in simplest form. The calcium in our carbonate equation could be substituted with our substitution for calcium. Using the carbonate substitution would require multiple iterations. In the tableau, this is seen as one of the columns referenced by $\vect{u}$ not being all zeros. A tableau with all zeros in its indexed columns is called a tableau in simplest form. If a replacement tableau is not in simplest form, it can be made into one through the series:
+\begin{equation*}
+    K[n]_{ij}=\begin{cases}
+        \matr{N}[n]_{ij},& \text{if } \vect{u} \text{ contains } j \\
+        0 & \text{otherwise}
+        \end{cases}
+\end{equation*}
+\begin{equation*}
+    H[n]_{ij}=
+        \begin{cases}
+        \matr{N}[n]_{ij},& \text{if } \vect{u}_i\neq j \\
+        0 & \text{otherwise}
+        \end{cases}
+\end{equation*}
+\begin{equation*}
+    \matr{N}[2n+1]=\matr{N}[2n]-K[2n]+\sum_{i=1}^{m}\matr{N}[2n]_{i*}\otimes\matr{N}[2n]_{*\vect{u}_i}
+\end{equation*}
+\begin{equation*}
+    \vect{d}[2n+1]_i=\vect{d}[2n]_i\prod_{p=1}^m d[2n]_p^{N[2n]_{i\vect{u}_p}}
+\end{equation*}
+\begin{equation*}
+    \matr{N}[2n]_{ij}=\frac{\matr{H}[2n-1]_{ij}}{1-\matr{N}[2n-1]_{i\vect{u}_i}}
+\end{equation*}
+\begin{equation*}
+    \vect{d}[2n]_i=\vect{d}[2n-1]_i^{\frac{1}{1-\matr{N}[2n-1]_{1\vect{u}_i}}}
+\end{equation*}
+
+This series converges to a fully simplified tableau in a finite number of terms. Note that when the tableau is simplified, successive iterations will do nothing as $N[n]_{i\vect{u}_p}$ is 0 for all $i$ and $p$. A single iteration of the algorithm on the replacement tableau above yields:
+\begin{center}
+    \begin{tabular}{c|c|c}
+    Coefficients ($\matr{N}$) & Constants ($\vect{d}$)  & Indexes ($\vect{u}$)  \\
+    \hline
+    $\begin{bmatrix}
+      -2 & 0 & 0 \\
+       2 & 0 & 0 \\
+    \end{bmatrix}$  &
+    $\begin{bmatrix}
+        \num{6.62e-42} \\
+       \num{5.0e32} \\
+    \end{bmatrix}$  &
+    $\begin{bmatrix}
+        2 \\
+       3 \\
+    \end{bmatrix}$
+\end{tabular}
+\end{center}
+
+\paragraph{Intuition for step 2n+1}
+The first step of the algorithm corresponds to substitution. Given two equations $B=PA^aC^c$ and $A=LC^d$, where $P$ and $L$ are constants, substitution requires first multiplying the value of of the exponents in the substitution ($d$) by the corresponding exponent that is being substituted into ($a$). This corresponds to the outer multiplication in the algorithm. Simplification requires then add up the exponents of similar terms. This corresponds to the sum in the algorithm. The subtraction of $\vect{K}$ in the algorithm corresponds to the elimination of $A$ from the equation. For the constant, $L$ is raised to the power of $a$ and then multiplied with $P$. This can be seen plainly in the algorithm.
+\paragraph{Intuition for step 2n}
+The second step of the algorithm corresponds to grouping the terms. Given an equation in the form $B=PA^aB^bC^c$ where $P$ is our constant, grouping requires multiplying all of the exponents by $\frac{1}{1-b}$ and take the $(1-b)$th root of our constant $P$. $\matr{H}$ is used instead of $\matr{N}$ to eliminate the moved coefficient.
+
+\subsection{Substitution into our tableau}
+
+\begin{center}
+    \begin{tabular} {c| c c c}
+        \setlength{\linewidth}{1cm}
+         & \ce{H+} & \ce{CO3^2-} & \ce{Ca^2+}\\
+        \hline
+        \ce{H+} & 1 & \\
+        \ce{CO3^2-} & & 1 \\
+        \ce{Ca^2+} & & & 1 \\
+        \ce{OH-} & -1 &  \\
+        \ce{HCO3-} & 1 & 1 \\
+        \ce{H2CO3*} & 2 & 1 \\
+        \ce{CaHCO3+} & 1 & 1 & 1 \\
+        \ce{CaCO3(aq)} & & 1 &1 \\
+    \end{tabular}
+\end{center}
+\begin{center}
+    \begin{tabular}{c|c|c}
+    Coefficients ($\matr{M}$) & Constants ($\vect{c}$)  \\
+    \hline
+    $\begin{bmatrix}
+        1 & 0 & 0\\
+        0 & 1 & 0\\
+        0 & 0 & 1\\
+        -1 & 0 & 0\\
+        1 & 1 & 0\\
+        2 & 1 & 0\\
+        1 & 1 & 1\\
+        0 & 1 & 1\\
+    \end{bmatrix}$ &
+    $\begin{bmatrix}
+        1\\
+        1\\
+        1\\
+        \num{e-14}\\
+        \num{4.7e-11}\\
+        \num{2.1e-17}\\
+        \num{1700}\\
+        \num{2.7e11}
+    \end{bmatrix}$ \\
+    \hline
+    Total ($\vect{t}$) \\
+    \hline
+    $\begin{bmatrix}
+        0 & \num{1e-3} & \num{1e-3}
+    \end{bmatrix}$
+    \end{tabular}
+\end{center}
+
+Substituting into a larger tableau is very similar to substituting a substitution matrix into itself, and actually much simpler as there is no need to regroup terms. Given an $m \times n$ substitution matrix $\matr{N}$, its constants $\vect{d}$, indexes ($\vect{u}$), and a tableau with coefficients $\matr{M}$, constants $\vect{c}$, and total $\vect{t}$, the formula for our substituted tableau with matrix $\matr{P}$, constants $\vect{g}$, and total $\vect{l}$ is:
+
+\begin{equation*}
+    \matr{P}=\matr{M}+\sum_{i=1}^{m}\matr{M}_{*\vect{u}_i}\otimes\matr{N}_{i*}
+\end{equation*}
+\begin{equation*}
+    \vect{g}_i=\vect{d}_i\prod_{p=1}^m d_p^{N_{i\vect{u}_p}}
+\end{equation*}
+\begin{equation*}
+    \vect{l}=\vect{t}+\sum_{i=1}^{m}\vect{t}_{\vect{u}_i}\matr{N}_{i*}
+\end{equation*}
+
+We then eliminate all of the columns indexed by $\vect{u}$ from $\matr{P}$ and $\vect{g}$. This results in a simplified system of equations which can be solved much more quickly than before. After substituting our simplified tableau above into our tableau above, we get the following (note: neither tableau is solvable):
+
+\begin{center}
+    \begin{tabular}{c|c}
+    Coefficients ($\matr{P}$) & Constants($\vect{g}$) \\
+    \hline
+    $\begin{bmatrix}
+        1 \\
+        -2 \\
+        2 \\
+        -1 \\
+        -1 \\
+        0 \\
+        1 \\
+        0 \\
+    \end{bmatrix}$ &
+    $\begin{bmatrix}
+        1\\
+        \num{6.6e-42} \\
+        \num{5e32} \\
+        \num{1e-14} \\
+        \num{3.1e-52} \\
+        \num{1.4e-58} \\
+        \num{5.6e-6} \\
+        \num{890} \\
+    \end{bmatrix}$ \\
+    \hline
+     Total ($\vect{l}$)  \\
+     \hline
+    $\begin{bmatrix}
+       0
+    \end{bmatrix}$
+    \end{tabular}
+\end{center}
+
+\paragraph{Intuition for substitution}
+While the intuition for the power part of this substitution is the same as simplification, this larger tableau's coefficients refer to the additive stochiometric coefficients as well. In this view, the outer multiplication and the modification to the totals can be thought of as adding one column to the other. These column additions are valid because each column is an equation.
+
+\section{Solids}
+Solids are a special case of our machinery, as they may enter or exit our system as we run our calculations. Most of the time, we initially assume no solids are present, and then add solids one at a time to our substitutions when their solubility product is greater than one in our final system. Our addition of the columns eliminates the solid concentrations from the total. In order to calculate the solid concentrations, we take the aqueous species concentrations, finding what our total concentration would be in the original tableau, and then using the error between what it should be and what it is and the solids' stochiometric coefficients to solve the linear system. If the concentration of any solid is ever found to be negative, it is removed from the substitution.
+\end{document}

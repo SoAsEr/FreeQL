@@ -1,17 +1,17 @@
 import Tippy from "@tippyjs/react";
 import React from "react";
+import classNames from "classnames";
 
-
-const TooltipButton=React.memo(({disabled, disableMessage, ...buttonProps}) => {
-   if(disabled) {
+const TooltipButton = React.memo(
+  ({ disabled, disableMessage, className, ...buttonProps }) => {
     return (
-      <Tippy content={disableMessage}>
-        <div className="flex"><button {...buttonProps} disabled /></div>
+      <Tippy content={disableMessage} onShow={(e) => !!disabled}>
+        <button
+          className={classNames(className, { "btn-disabled": disabled })}
+          {...buttonProps}
+        />
       </Tippy>
-    )
-
-  } else {
-    return <div className="flex"><button {...buttonProps} disabled={disabled} /></div>;
+    );
   }
-});
-export default TooltipButton
+);
+export default TooltipButton;

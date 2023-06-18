@@ -5,4 +5,13 @@ const cumulativeSum = (array) => {
   }, []);
 };
 
-export {cumulativeSum};
+function findLastIndex(array, predicate) {
+  let l = array.length;
+  while (l--) {
+      if (predicate(array[l], l, array))
+          return l;
+  }
+  return -1;
+}
+
+export {cumulativeSum, findLastIndex};

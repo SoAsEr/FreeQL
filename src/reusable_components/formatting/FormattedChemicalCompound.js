@@ -1,32 +1,58 @@
 import React from "react";
+import { subregex, supsubregex, wordRegex } from "./chemicalRegexes";
 
-const FormattedChemicalCompound=React.memo((props) => {
-  /*
-  WordMatcher=(.*?[^0-9\[\(])
-  SubMatcher=([0-9])
-  EndMatcher=([$\s])
-  SupMatcher=([+-])(?:(?:1|([2-9]))|{EndMatcher})
-  WholeExp={WordMatcher}(?:{EndMatcher}|{SubMatcher}{SupMatcher}?|{SupMatcher})
-  (WordMatcher[0])_(SubMatcher[0])^(SupMatcher[1]SupMatcher[0])EndMatcher[0]
-  That would only work with ruby where the capture groups are changed on every recursion
-  */
-  //https://regex101.com/r/POrbvL/4
-  const regex=/(?<WordMatcher>.*?[^0-9[(\s])(?:(?<EndMatcher1>$|[:.\s])|(?<Charge1>(?<ChargeSign1>[+-])(?:(?:1|(?<ChargeValue1>[2-9]))|(?<EndMatcher2>$|[:.\s])))|(?<SubMatcher>[0-9]+)(?<Charge2>(?<ChargeSign2>[+-])(?:(?:1|(?<ChargeValue2>[2-9]))|(?<EndMatcher3>$|[:.\s])))?)(?<EndMatcher4>$|[:.\s])?/g;
-  //$<WordMatcher>_($<SubMatcher>)^($<ChargeValue1>$<ChargeValue2>$<ChargeSign1>$<ChargeSign2>)$<EndMatcher1>$<EndMatcher2>$<EndMatcher3>
-  return(
-    <>
-        {Array.from(props.children.matchAll(regex)).map((match) => {
-          const chargeValue=[match.groups.ChargeValue1, match.groups.ChargeValue2].reduce((prev, curr) => curr ? curr : prev, "");
-          const chargeSign=[match.groups.ChargeSign1, match.groups.ChargeSign2].reduce((prev, curr) => curr ? curr : prev, "");
-          const terminator=[match.groups.EndMatcher1, match.groups.EndMatcher2, match.groups.EndMatcher3, match.groups.EndMatcher4].reduce((prev, curr) => curr ? curr : prev, "");
-          return (
-            <span key={props.children.substring(0, match.index)}>
-              {match.groups.WordMatcher}<sub>{match.groups.SubMatcher}</sub><sup>{chargeValue}{chargeSign}</sup>{terminator}
-            </span>
-          );
-        })
-        }
-    </>
-  );
+const hyphenTester = /[a-z]{2}/;
+const FormattedChemicalCompound = React.memo(({ children, ...props }) => {
+  const tree = [];
+  for (const match of children.matchAll(supsubregex)) {
+    const block = [];
+    const wordMatches = Array.from(
+      match.groups.WordMatcher.matchAll(wordRegex)
+    );
+    for (const [i, subMatch] of wordMatches.entries()) {
+      const adding = subMatch[0].match(hyphenTester) ? (
+        <span className="hyphens-auto">{subMatch[0]}</span>
+      ) : (
+        <>{subMatch[0]}</>
+      );
+      if (i === wordMatches.length - 1) {
+        block.push(React.cloneElement(adding, { key: block.length }));
+      } else {
+        tree.push(
+          <div className="inline-block" key={tree.length}>
+            {adding}
+          </div>
+        );
+      }
+    }
+    if (match.groups.SubMatcher) {
+      for (const subMatch of match.groups.SubMatcher.matchAll(subregex)) {
+        block.push(
+          <React.Fragment key={block.length}>
+            {subMatch[1]}
+            <sub>{subMatch[2]}</sub>
+          </React.Fragment>
+        );
+      }
+    }
+    if (match.groups.SupMatcher) {
+      block.push(
+        <sup key={block.length}>
+          {match.groups.ChargeValue !== "1" && match.groups.ChargeValue}
+          {match.groups.ChargeSign}
+        </sup>
+      );
+    }
+    tree.push(
+      <React.Fragment key={tree.length}>
+        <div className="inline-block">
+          {block}
+          {match.groups.EndBlockMatcher}
+        </div>
+        {match.groups.EndMatcher}
+      </React.Fragment>
+    );
+  }
+  return <span {...props}>{tree}</span>;
 });
 export default FormattedChemicalCompound;

@@ -1,83 +1,69 @@
 import React from "react";
 
-import is_number from "is-number";
-import { useDispatch, useSelector } from "react-redux";
-import { createSelector } from "reselect";
 import TooltipButton from "../../reusable_components/TooltipButton";
-import { getComponentsConc } from "../components/componentsSelectors";
-import {calculateEquilibrium, getCurrentCalculationArguments } from "./equilibriaSlice";
-import { getComponentToGases, getErroredGases, getGasReplacements, getPartialPressures } from "../species/gases/gasInputSlice";
-import ReduxSuspense from "../loading/ReduxSuspense";
-import { getSpeciesPresent } from "../species/speciesSelectors";
 
-const message=createSelector(
-  [getErroredGases, getGasReplacements, getComponentsConc, getComponentToGases, getPartialPressures, getSpeciesPresent],
-  (erroredGases, gasReplacements, componentsConc, componentToGases, partialPressures, speciesPresent) => { 
-    console.log(gasReplacements);
-    if (erroredGases.size>0) {
-      return "Two gases are replacing the same component";
-    } else if (!speciesPresent.gases.every((gas) => gasReplacements.get(gas))) {
-      return "You have not selected a replacement for at least one gas";
-    } else if(componentsConc.deleteAll(componentToGases.keys()).some(conc => !is_number(conc))) {
-      return "At least one component is empty or invalid";
-    } else if(partialPressures.some(partialPressure => !is_number(partialPressure))) {
-      return "At least one gas's partial pressure is empty or invalid";
-    } else {
-      return false;
-    }
-  }
-);
+import { useLoadingContext } from "../EquilibriumForm/EquilibriumForm";
+import { useFormikContext } from "formik";
 
+const CalculateButton = ({
+  onClick,
+  focusOnClick,
+  disabled,
+  ...otherProps
+}) => {
+  const loadingContext = useLoadingContext();
+  const { errors } = useFormikContext();
 
-const DisabledCalculateButton=React.memo(({disableMessage, ...otherProps}) => {
-  return (
-    <TooltipButton 
-      disabled
-      disableMessage={disableMessage} 
-      children={"Calculate"} 
-      className="btn-primary mx-4 my-2 shadow-xl w-full"
-      {...otherProps} 
-    />
-  )
-  
-})
-const EnabledCalculateButton=React.memo(({onClick, ...otherProps}) => {
-  const dispatch=useDispatch()
-  const context=useSelector(getCurrentCalculationArguments);
-
-  return (
-    <TooltipButton 
-      onClick={(e) => {
-        onClick(e);
-        dispatch(calculateEquilibrium(context))
-      }} 
-      children={"Calculate"} 
-      className="btn-primary mx-4 my-2 shadow-xl w-full"
-      {...otherProps} 
-    />
-  )
-})
-
-
-const CalculateButtonInternal=React.memo(({onClick, ...otherProps}) => {
-  const disableMessage=useSelector(message);
-  if(!!disableMessage){
-    return(
-      <DisabledCalculateButton {...otherProps} disableMessage={disableMessage} />
-    )
-  } else {
+  if (
+    loadingContext.components ||
+    loadingContext.species.aqs ||
+    loadingContext.species.solids ||
+    loadingContext.species.gases
+  ) {
     return (
-      <EnabledCalculateButton onClick={onClick} {...otherProps} />
+      <TooltipButton
+        disabled
+        disableMessage="Getting Database..."
+        children="Calculate"
+        {...otherProps}
+      />
     );
   }
-});
-
-const CalculateButton=React.memo((props) => {
-  return (
-    <ReduxSuspense fallback={<DisabledCalculateButton message="Getting Database..." {...props}/>} subscribedItems={["componentDB", "speciesDB"]}>
-      <CalculateButtonInternal {...props} />
-    </ReduxSuspense>
-  )
-});
+  if (
+    focusOnClick &&
+    errors.highestPriority &&
+    errors.highestPriority.length !== 0
+  ) {
+    return (
+      <TooltipButton
+        disabled
+        disableMessage={errors.highestPriority[0].message.toString()}
+        onClick={(e) => {
+          const nameQueryString = `[name="${errors.highestPriority[0].instancePath
+            .substring(1)
+            .replaceAll("/", ".")}"]`;
+          const queryString = `input[type="radio"]${nameQueryString}:checked,input:not([type="radio"])${nameQueryString}`;
+          const element = e.target.closest("form").querySelector(queryString);
+          element.focus();
+        }}
+        children="Calculate"
+        {...otherProps}
+      />
+    );
+  } else if (disabled) {
+    return (
+      <TooltipButton
+        children="Calculate"
+        disableMessage="Please Return to Input Page"
+        disabled
+        {...otherProps}
+      />
+    );
+  } else {
+    return (
+      <TooltipButton children="Calculate" onClick={onClick} {...otherProps} />
+    );
+  }
+};
 
 export default CalculateButton;

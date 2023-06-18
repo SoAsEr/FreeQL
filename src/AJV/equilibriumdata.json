@@ -1,0 +1,302 @@
+{
+  "$id":"https://freeql.org/schemas/equilibriumdata.json#",
+  "definitions":{
+    "componentDBData": {
+      "type":"object",
+      "properties": {
+        "id":{
+          "type":"string"
+        },
+        "hPlus":{
+          "type":"boolean"
+        },
+        "name":{
+          "type":"string"
+        },
+        "index":{
+          "type":"number"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "index"
+      ]
+    },
+    "commonSpecies":{
+      "type": "object",
+      "properties":{
+        "enabled":{
+          "type":"boolean"
+        },
+        "logK":{
+          "type": "string",
+          "is-number":true
+        },
+        "logKChanged":{
+          "type":"boolean"
+        },
+        "replacedComponent":{
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref":"#/definitions/componentDBData"
+            }
+          ]
+        },
+        "dbData":{
+          "type": "object",
+          "properties": {
+            "id": {
+              "type":"string"
+            },
+            "name":{
+              "type":"string"
+            },
+            "logK":{
+              "type":"string",
+              "is-number":true
+            },
+            "index":{
+              "type":"number"
+            },
+            "components":{
+              "type":"array",
+              "items":{
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "$ref":"#/definitions/componentDBData"
+                  },
+                  "amt": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "data",
+                  "amt"
+                ]
+              }
+            },
+            "needsWater":{
+              "type":"boolean"
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "logK",
+            "index",
+            "components",
+            "type"
+          ]
+        }
+      },
+      "required":[
+        "dbData"
+      ]
+    }
+  },
+  "type":"object",
+  "required":[
+    "ionicStrength",
+    "alkalinity",
+    "components",
+    "species"
+  ],
+  "properties":{
+    "ionicStrength":{
+      "type":"object",
+      "properties": {
+        "fixed": {"type":"boolean"},
+        "value":{"type":"string"}
+      }
+    },
+    "alkalinity":{
+      "type":"object",
+      "properties":{
+        "species":{
+          "type":"array",
+          "items":{
+            "type":"string"
+          }
+        }
+      }
+    },
+    "components":{
+      "type":"array",
+      "items":{
+        "type":"object",
+        "required":[
+          "dbData"
+        ],
+        "properties":{
+          "id":{
+            "type":"string"
+          },
+          "hPlus":{
+            "type":"boolean"
+          },
+          "concentration":{
+            "type": "string"
+          },
+          "concentrationType": true,
+          "dbData": {
+            "$ref":"#/definitions/componentDBData"
+          }
+        },
+        "additionalProperties": false,
+        "allOf":[
+          {
+            "if":{
+              "properties":{
+                "hPlus":{
+                  "type": "boolean",
+                  "enum":[true]
+                }
+              }
+            },
+            "then":{
+              "properties":{
+                "concentrationType":{
+                  "type":"string",
+                  "enum":[
+                    "total",
+                    "alk",
+                    "pH"
+                  ]
+                }
+              }
+            },
+            "else":{
+              "properties":{
+                "concentrationType":{
+                  "type":"string",
+                  "enum":[
+                    "total",
+                    "alk",
+                    "equilibrium"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "species":{
+      "type":"object",
+      "required":[
+        "aqs",
+        "solids",
+        "gases"
+      ],
+      "properties":{
+        "aqs":{
+          "type":"array",
+          "items":{
+            "allOf":[
+              {
+                "$ref":"#/definitions/commonSpecies"
+              },
+              {
+                "type": "object",
+                "properties":{
+                  "enabled": true,
+                  "logK": true,
+                  "logKChanged": true,
+                  "replacedComponent": true,
+                  "dbData":{
+                    "type":"object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["aqs"]
+                      }
+                    }
+                  },
+                  "knownEquilibriumConcentration":{
+                    "type":"boolean"
+                  },
+                  "equilibriumConcentration":{
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "solids":{
+          "type":"array",
+          "items":{
+            "allOf":[
+              {
+                "$ref":"#/definitions/commonSpecies"
+              },
+              {
+                "type": "object",
+                "properties":{
+                  "enabled": true,
+                  "logK": true,
+                  "logKChanged": true,
+                  "replacedComponent": true,
+                  "dbData":{
+                    "type":"object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["solids"]
+                      }
+                    }
+                  },
+                  "forcedEquilibrium":{
+                    "type":"boolean"
+                  },
+                  "probablyPresent":{
+                    "type":"boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "gases":{
+          "type":"array",
+          "items":{
+            "allOf":[
+              {
+                "$ref":"#/definitions/commonSpecies"
+              },
+              {
+                "type": "object",
+                "properties":{
+                  "enabled": true,
+                  "logK": true,
+                  "logKChanged": true,
+                  "replacedComponent": true,
+                  "dbData":{
+                    "type":"object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["gases"]
+                      }
+                    }
+                  },
+                  "partialPressure": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

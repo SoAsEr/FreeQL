@@ -1,0 +1,286 @@
+{
+  "$id":"https://freeql.org/schemas/equilibriumform.json#",
+  "definitions":{
+    "enabled":{
+      "type": "object",
+      "properties":{
+        "enabled":{
+          "type": "boolean",
+          "enum":[true]
+        }
+      }
+    },
+    "commonSpecies": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "logK",
+        "logKChanged"
+      ]
+    },
+    "replacedComponent":{
+      "type": "object",
+      "properties":{
+        "id":{
+          "type":"string",
+          "replacement":{
+            "$data":"/replacementMap"
+          },
+          "errorMessage": {
+            "replacement":"__REPLACE__"
+          }
+        }
+      },
+      "errorMessage": {
+        "type": "You must choose a component to replace"
+      }
+    }
+  },
+  "$ref": "equilibriumdata.json#",
+  "type":"object",
+  "required":[
+    "ionicStrength",
+    "alkalinity",
+    "components",
+    "species"
+  ],
+  "properties":{
+    "ionicStrength":{
+      "allOf":[
+        {
+          "if":{
+            "type": "object",
+            "properties":{
+              "fixed":{
+                "const":true
+              }
+            }
+          },
+          "then":{
+            "type": "object",
+            "properties": {
+              "value": {
+                "type":"string",
+                "is-number":true,
+                "errorMessage":{
+                  "is-number": "A valid ionic strength must be entered"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "type":"object",
+      "properties": {
+        "fixed": {"type":"boolean"},
+        "value":{"type":"string"}
+      }
+    },
+    "alkalinity":{
+      "type":"object",
+      "properties":{
+        "species":{
+          "type":"array",
+          "items":{
+            "type":"string"
+          }
+        }
+      }
+    },
+    "components":{
+      "type":"array",
+      "contains":{
+        "type": "object",
+        "properties":{
+          "concentrationType": {
+            "const":"alk"
+          }
+        }
+      },
+      "maxContains": 1,
+      "minContains": 0,
+      "items":{
+        "type":"object",
+        "required": ["concentration", "concentrationType"],
+        "properties":{
+          "concentration":{
+            "type": "string",
+            "is-number":true,
+            "errorMessage":{
+              "is-number": "A valid component concentration must be entered"
+            }
+          }
+        },
+        "allOf":[
+          {
+            "if":{
+              "type": "object",
+              "properties":{
+                "concentrationType":{
+                  "enum":[
+                    "equilibrium",
+                    "alk",
+                    "pH"
+                  ]
+                }
+              }
+            },
+            "then":{
+              "type": "object",
+              "properties": {
+                "dbData": {
+                  "$ref":"equilibriumform.json#/definitions/replacedComponent"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "errorMessage": {
+        "contains": "Only 1 component may have its concenctration specified by alkalinity"
+      }
+    },
+    "species":{
+      "type":"object",
+      "required":[
+        "aqs"
+      ],
+      "properties":{
+        "aqs":{
+          "type":"array",
+          "items":{
+            "allOf":[
+              {
+                "$ref":"equilibriumform.json#/definitions/commonSpecies"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "equilibriumConcentration",
+                  "knownEquilibriumConcentration",
+                  "replacedComponent"
+                ]
+              },
+              {
+                "if":{
+                  "allOf": [
+                    {
+                      "$ref":"equilibriumform.json#/definitions/enabled"
+                    },
+                    {
+                      "type": "object",
+                      "properties":{
+                        "knownEquilibriumConcentration":{
+                          "type": "boolean",
+                          "enum":[true]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "then":{
+                  "type": "object",
+                  "properties":{
+                    "replacedComponent": {
+                      "$ref":"equilibriumform.json#/definitions/replacedComponent"
+                    },
+                    "equilibriumConcentration":{
+                      "type": "string",
+                      "is-number":true,
+                      "errorMessage":{
+                        "is-number": "A valid species concentration must be entered"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "solids":{
+          "type":"array",
+          "items":{
+            "allOf":[
+              {
+                "$ref":"equilibriumform.json#/definitions/commonSpecies"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "forcedEquilibrium",
+                  "probablyPresent"
+                ]
+              },
+              {
+                "if":{
+                  "allOf": [
+                    {
+                      "$ref":"equilibriumform.json#/definitions/enabled"
+                    },
+                    {
+                      "type": "object",
+                      "properties":{
+                        "forcedEquilibrium":{
+                          "type": "boolean",
+                          "enum":[true]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "then":{
+                  "type": "object",
+                  "properties":{
+                    "replacedComponent": {
+                      "$ref":"equilibriumform.json#/definitions/replacedComponent"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "gases":{
+          "type":"array",
+          "items":{
+            "allOf":[
+              {
+                "$ref":"equilibriumform.json#/definitions/commonSpecies"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "partialPressure"
+                ]
+              },
+              {
+                "if":{
+                  "allOf": [
+                    {
+                      "$ref":"equilibriumform.json#/definitions/enabled"
+                    }
+                  ]
+                },
+                "then":{
+                  "type": "object",
+                  "properties":{
+                    "replacedComponent": {
+                      "$ref":"equilibriumform.json#/definitions/replacedComponent"
+                    },
+                    "partialPressure": {
+                      "type": "string",
+                        "is-number":true,
+                        "errorMessage":{
+                          "is-number": "A valid partial pressure must be entered"
+                        }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

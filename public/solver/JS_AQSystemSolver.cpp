@@ -6,7 +6,7 @@
 
 AQSystemSolver::Tableau<> createTableau(const emscripten::val& tableau, const std::size_t width){
     const std::size_t height=tableau["constants"]["length"].as<std::size_t>();
-    
+
     Eigen::MatrixXd coefficients(height, width);
     const std::vector<double> coeffecientsVect=emscripten::convertJSArrayToNumberVector<double>(tableau["coefficients"]);
     std::copy(coeffecientsVect.begin(), coeffecientsVect.end(), coefficients.reshaped<Eigen::RowMajor>().begin());
@@ -39,12 +39,12 @@ AQSystemSolver::Equilibrium calculateEquilibrium(const std::size_t tableauWidth,
 }
 
 emscripten::val getTableauConcentrations(const AQSystemSolver::Equilibrium& equilibrium){
-    return emscripten::val::array(equilibrium.tableauConcentrations.begin(), equilibrium.tableauConcentrations.end());
+    return emscripten::val::array(equilibrium.getTableauConcentrations().begin(), equilibrium.getTableauConcentrations().end());
 }
 emscripten::val getSolidsPresent(const AQSystemSolver::Equilibrium& equilibrium){
     auto indexes=emscripten::val::array();
     auto concentrations=emscripten::val::array();
-    for(const auto& solid: equilibrium.solidsPresent){
+    for(const auto& solid: equilibrium.getSolidsPresent()){
         indexes.call<void>("push", solid.solidIndex);
         concentrations.call<void>("push", solid.concentration);
     }
@@ -56,7 +56,7 @@ emscripten::val getSolidsPresent(const AQSystemSolver::Equilibrium& equilibrium)
 emscripten::val getSolidsNotPresent(const AQSystemSolver::Equilibrium& equilibrium){
     auto indexes=emscripten::val::array();
     auto solubilityProducts=emscripten::val::array();
-    for(const auto& solid: equilibrium.solidsNotPresent){
+    for(const auto& solid: equilibrium.getSolidsNotPresent()){
         indexes.call<void>("push", solid.solidIndex);
         solubilityProducts.call<void>("push", solid.solubilityProduct);
     }
@@ -70,12 +70,12 @@ emscripten::val getTotalConcentrations(const AQSystemSolver::Equilibrium& equili
     return emscripten::val::array(totalConcentrations.begin(), totalConcentrations.end());
 }
 emscripten::val getExtraSolubilityProducts(const AQSystemSolver::Equilibrium& equilibrium, const emscripten::val& tableau){
-    const auto solubilityProducts=equilibrium.getExtraSolubilityProducts(createTableau(tableau, equilibrium.tableau.cols()));
+    const auto solubilityProducts=equilibrium.getExtraSolubilityProducts(createTableau(tableau, equilibrium.cols()));
     return emscripten::val::array(solubilityProducts.begin(), solubilityProducts.end());
 }
 
 EMSCRIPTEN_BINDINGS(my_class) {
-    emscripten::class_<AQSystemSolver::Equilibrium>("Equilbrium");
+    emscripten::class_<AQSystemSolver::Equilibrium>("Equilibrium");
     emscripten::function("calculateEquilibrium", &calculateEquilibrium);
 
     emscripten::function("getTableauConcentrations", &getTableauConcentrations);
@@ -83,7 +83,7 @@ EMSCRIPTEN_BINDINGS(my_class) {
     emscripten::function("getSolidsPresent", &getSolidsPresent);
 
     emscripten::function("getSolidsNotPresent", &getSolidsNotPresent);
-    
+
     emscripten::function("getTotalConcentrations", &getTotalConcentrations);
 
     emscripten::function("getExtraSolubilityProducts", &getExtraSolubilityProducts);
